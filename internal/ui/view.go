@@ -128,7 +128,8 @@ func (m Model) footerView() string {
 		add("R", "rebuild")
 		add("x", "abort")
 		add("w", "watch")
-		add("o", "browser")
+		add("o", "job page")
+		add("O", "build page")
 		add("h", "back")
 	case m.scr == scrLog:
 		if len(m.log.inputs) > 0 {
@@ -138,7 +139,8 @@ func (m Model) footerView() string {
 		add("g/G", "top/end")
 		add("R", "rebuild")
 		add("x", "abort")
-		add("o", "browser")
+		add("o", "job page")
+		add("O", "console")
 		add("h", "back")
 	case m.scr == scrParams && m.params.input != nil:
 		if len(m.params.fields) > 0 {
@@ -522,7 +524,8 @@ func (m Model) helpView(h int) string {
 		{"J/K", "move a watched job down / up"},
 		{"p", "cycle the watch poll interval (saved)"},
 		{"m", "macros: run, create, edit"},
-		{"o", "open in browser"},
+		{"o", "open in browser (builds, log: the job's page)"},
+		{"O", "builds, log: open the build / console in browser"},
 		{"f", "follow log output"},
 		{"r", "refresh"},
 		{"a", "toggle the cat"},
