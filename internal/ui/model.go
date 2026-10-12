@@ -419,9 +419,12 @@ func (m Model) pollWatched() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
+// openBrowser is notify.Open; tests replace it.
+var openBrowser = notify.Open
+
 func openURL(url string) tea.Cmd {
 	return func() tea.Msg {
-		if err := notify.Open(url); err != nil {
+		if err := openBrowser(url); err != nil {
 			return actionMsg{err: fmt.Errorf("open browser: %w", err)}
 		}
 		return actionMsg{ok: "Opened in browser"}
@@ -1197,6 +1200,8 @@ func (m Model) buildsKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m.startRebuild(b.Number, scrBuilds) // 0 when there are no builds
 	case "o":
+		return m, openURL(m.client.BrowserURL(m.builds.job.Path, 0))
+	case "O":
 		num := 0
 		if ok {
 			num = b.Number
@@ -1213,7 +1218,7 @@ func (m Model) buildsKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.setStatus("That build is not running", true)
 	case "i":
 		if m.builds.noInputAPI {
-			m.setStatus("Can't list input steps: Jenkins lacks the Pipeline Stage View plugin — press o to answer in the browser", true)
+			m.setStatus("Can't list input steps: Jenkins lacks the Pipeline Stage View plugin — press O to answer in the browser", true)
 			return m, nil
 		}
 		// Prefer the selected build, else the newest one that is waiting.
@@ -1438,6 +1443,8 @@ func (m Model) logKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.log.vp.GotoTop()
 		return m, nil
 	case "o":
+		return m, openURL(m.client.BrowserURL(m.log.job.Path, 0))
+	case "O":
 		return m, openURL(m.client.BrowserURL(m.log.job.Path, m.log.number) + "console")
 	case "i":
 		if len(m.log.inputs) == 0 {

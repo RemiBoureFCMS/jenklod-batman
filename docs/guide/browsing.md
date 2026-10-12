@@ -8,7 +8,8 @@ The root screen lists your [watched jobs](./watching) first, then the top-level 
 | <kbd>h</kbd> <kbd>←</kbd> <kbd>esc</kbd> | Back |
 | <kbd>j</kbd>/<kbd>k</kbd>, <kbd>g</kbd>/<kbd>G</kbd>, <kbd>ctrl+d</kbd>/<kbd>ctrl+u</kbd> | Move |
 | <kbd>r</kbd> | Refresh |
-| <kbd>o</kbd> | Open in the browser |
+| <kbd>o</kbd> | Open in the browser: the selected job or folder, or from a job's builds or a build's log, the job's page |
+| <kbd>O</kbd> | From a job's builds or a build's log: open that build, or its console, in the browser |
 
 ## Builds
 

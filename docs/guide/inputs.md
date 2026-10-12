@@ -14,6 +14,6 @@ Many pipelines stop on an `input` step before the production deploy. jenklod-bat
 
 ## Requirements
 
-Listing pending inputs uses the API of the **Pipeline: Stage View** plugin (`wfapi`). Without that plugin, <kbd>i</kbd> says so, and <kbd>o</kbd> opens the build in the browser to answer it there.
+Listing pending inputs uses the API of the **Pipeline: Stage View** plugin (`wfapi`). Without that plugin, <kbd>i</kbd> says so, and <kbd>O</kbd> opens the build in the browser to answer it there.
 
 Jenkins still enforces the step's `submitter` restriction. If you aren't allowed to approve, you'll see a "forbidden" error.
