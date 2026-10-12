@@ -226,17 +226,33 @@ func TestMacroEditorSavesSteps(t *testing.T) {
 		t.Fatalf("editor:\n%s", v)
 	}
 
+	// Argument: a typo is refused, ENV is taken.
+	m = drive(t, m, key("A"))
+	m = typeText(t, m, "EVN")
+	m = drive(t, m, key("enter"))
+	if m.macros.edit.mode != editArg || !strings.Contains(m.status, "EVN is not a parameter") {
+		t.Fatalf("typo accepted: mode=%d status=%q", m.macros.edit.mode, m.status)
+	}
+	for range 3 {
+		m = drive(t, m, tea.KeyMsg{Type: tea.KeyBackspace})
+	}
+	m = typeText(t, m, "ENV")
+	m = drive(t, m, key("enter"))
+	if v := snapshot(t, "24b-macro-arg", m); !strings.Contains(v, "jenklod-batman ship <ENV>") {
+		t.Fatalf("editor:\n%s", v)
+	}
+
 	m = drive(t, m, tea.KeyMsg{Type: tea.KeyCtrlS})
 	if m.scr != scrMacros {
 		t.Fatalf("after save screen=%d status=%q", m.scr, m.status)
 	}
 	saved, _ := config.Load(cfg.Path())
 	mac, ok := saved.Macro("ship")
-	if !ok || len(mac.Steps) != 2 || mac.Steps[0].Params["ENV"] != "staging" || mac.Steps[1].TimeoutMinutes != 45 {
+	if !ok || mac.Arg != "ENV" || len(mac.Steps) != 2 || mac.Steps[0].Params["ENV"] != "staging" || mac.Steps[1].TimeoutMinutes != 45 {
 		t.Fatalf("saved = %+v", saved.Macros())
 	}
 	v = snapshot(t, "25-macros", m)
-	if !strings.Contains(v, "ship") || !strings.Contains(v, "2 step(s)") {
+	if !strings.Contains(v, "ship <ENV>") || !strings.Contains(v, "2 step(s)") {
 		t.Errorf("picker:\n%s", v)
 	}
 

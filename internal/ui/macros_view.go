@@ -9,7 +9,7 @@ import (
 
 func (m Model) macrosView(h int) string {
 	var b strings.Builder
-	b.WriteString(sLabel.Render("Macros") + sDim.Render("  on "+m.client.Host()+" · also: jenklod-batman run <name>") + "\n\n")
+	b.WriteString(sLabel.Render("Macros") + sDim.Render("  on "+m.client.Host()+" · also: jenklod-batman <name>") + "\n\n")
 	h -= 2
 	ms := m.cfg.Macros()
 	if len(ms) == 0 {
@@ -23,7 +23,7 @@ func (m Model) macrosView(h int) string {
 	for i := start; i < end; i++ {
 		mac := ms[i]
 		sel := i == m.macros.cursor
-		cur, name := "  ", pad(mac.Name, 20)
+		cur, name := "  ", pad(usage(mac), 20)
 		if sel {
 			cur, name = sCursor.Render("▌ "), sSelected.Render(name)
 		}
@@ -76,7 +76,7 @@ func (m Model) macroEditHints() [][2]string {
 		return [][2]string{{"b", "build"}, {"x", "abort"}, {"w", "wait"}, {"i", "input"}, {"esc", "cancel"}}
 	case editPick:
 		return [][2]string{{"↑/↓", "move"}, {"enter", "pick"}, {"esc", "cancel"}}
-	case editTimeout:
+	case editTimeout, editArg:
 		return [][2]string{{"enter", "set"}, {"esc", "cancel"}}
 	}
 	hints := [][2]string{{"a", "add step"}}
@@ -91,7 +91,7 @@ func (m Model) macroEditHints() [][2]string {
 		}
 		hints = append(hints, [2]string{"J/K", "move"}, [2]string{"d", "delete"})
 	}
-	return append(hints, [2]string{"r", "rename"}, [2]string{"ctrl+s", "save"}, [2]string{"esc", "close"})
+	return append(hints, [2]string{"A", "argument"}, [2]string{"r", "rename"}, [2]string{"ctrl+s", "save"}, [2]string{"esc", "close"})
 }
 
 func (m Model) macroEditView(h int) string {
@@ -105,8 +105,14 @@ func (m Model) macroEditView(h int) string {
 	if e.dirty {
 		dirty = sWait.Render("  ● unsaved")
 	}
-	b.WriteString(sDim.Render("Macro ") + name + dirty + "\n\n")
-	h -= 2
+	b.WriteString(sDim.Render("Macro ") + name + dirty + "\n")
+	if e.arg != "" {
+		b.WriteString(sDim.Render("Argument: ") + e.arg + sDim.Render("  — jenklod-batman "+m.macroEditTitle()+" <"+e.arg+">") + "\n")
+	} else {
+		b.WriteString(sDim.Render("No argument (A sets one, e.g. BRANCH: jenklod-batman "+m.macroEditTitle()+" <value>)") + "\n")
+	}
+	b.WriteString("\n")
+	h -= 3
 
 	switch e.mode {
 	case editKind:
@@ -157,8 +163,11 @@ func (m Model) macroEditView(h int) string {
 		}
 		b.WriteString(cur + truncate(desc, m.w-4) + "\n")
 	}
-	if e.mode == editTimeout {
+	switch e.mode {
+	case editTimeout:
 		b.WriteString("\n" + e.timeout.View())
+	case editArg:
+		b.WriteString("\n" + e.argInput.View())
 	}
 	return b.String()
 }

@@ -60,7 +60,7 @@ func TestMacrosRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.toml")
 	c, _ := Load(path)
 	c.URL = "https://ci"
-	want := []Macro{{Name: "ship", Steps: []Step{
+	want := []Macro{{Name: "ship", Arg: "ENV", Steps: []Step{
 		{Kind: StepAbort, Job: "gotham/deploy"},
 		{Kind: StepBuild, Job: "gotham/deploy", WithParams: true, Params: map[string]string{"ENV": "prod"}},
 		{Kind: StepBuild, Job: "only-passwords", WithParams: true},

@@ -47,16 +47,23 @@ func (e *StepError) Unwrap() error { return e.Err }
 // typo fails before anything is triggered.
 func CheckOverrides(m config.Macro, overrides map[string]string) error {
 	for _, k := range slices.Sorted(maps.Keys(overrides)) {
-		used := false
-		for _, s := range m.Steps {
-			if _, ok := s.Params[k]; ok && s.Kind == config.StepBuild && s.WithParams {
-				used = true
-			}
-		}
-		if !used {
+		if !m.HasParam(k) {
 			return fmt.Errorf("%s is not a parameter of any build step in %q", k, m.Name)
 		}
 	}
+	return nil
+}
+
+// SetArg puts value into overrides under the macro's argument parameter,
+// for `jenklod-batman <macro> <value>`.
+func SetArg(m config.Macro, value string, overrides map[string]string) error {
+	if m.Arg == "" {
+		return fmt.Errorf("%q takes no argument: set one in the TUI (m, e on the macro, then A), or pass KEY=VALUE", m.Name)
+	}
+	if _, ok := overrides[m.Arg]; ok {
+		return fmt.Errorf("%s is given twice: as the argument and as %s=", m.Arg, m.Arg)
+	}
+	overrides[m.Arg] = value
 	return nil
 }
 

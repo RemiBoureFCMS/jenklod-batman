@@ -174,6 +174,23 @@ func TestCheckOverrides(t *testing.T) {
 	}
 }
 
+func TestSetArg(t *testing.T) {
+	m := config.Macro{Name: "cvaden-nuxt-staging", Arg: "BRANCH", Steps: []config.Step{
+		{Kind: config.StepBuild, Job: "cvaden-nuxt", WithParams: true, Params: map[string]string{"BRANCH": "main"}},
+	}}
+	ov := map[string]string{}
+	if err := SetArg(m, "prototype/saved-search-list", ov); err != nil || ov["BRANCH"] != "prototype/saved-search-list" {
+		t.Fatalf("err=%v overrides=%v", err, ov)
+	}
+	if err := SetArg(m, "other", ov); err == nil {
+		t.Error("the argument and BRANCH= together must be rejected")
+	}
+	m.Arg = ""
+	if err := SetArg(m, "main", map[string]string{}); err == nil {
+		t.Error("a macro without an argument must reject a value")
+	}
+}
+
 func TestUnchainedInputLooksOnceAndSkips(t *testing.T) {
 	steps := []config.Step{
 		{Kind: config.StepInput, Job: "gotham/deploy"},

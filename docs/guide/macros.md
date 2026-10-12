@@ -16,6 +16,7 @@ In the editor:
 | <kbd>enter</kbd> | On a build step: edit its parameters. On a wait or input step: its timeout |
 | <kbd>t</kbd> | Set a wait or input step's timeout, in minutes |
 | <kbd>space</kbd> | On an input step: switch between proceed and abort |
+| <kbd>A</kbd> | Set the macro's argument: the parameter a value typed after its name fills (see [below](#an-argument)) |
 | <kbd>J</kbd>/<kbd>K</kbd> | Move the step down or up |
 | <kbd>d</kbd> | Delete the step |
 | <kbd>r</kbd> | Rename the macro |
@@ -68,14 +69,29 @@ On the macro list, <kbd>enter</kbd> shows the steps and asks y/n. The macro then
 
 ```sh
 jenklod-batman run --list                # list the macros for the configured Jenkins
-jenklod-batman run ship                  # show the steps, ask y/n, run
-jenklod-batman run ship ENV=prod -y      # override a parameter, don't ask
+jenklod-batman ship                      # show the steps, ask y/n, run
+jenklod-batman ship ENV=prod -y          # override a parameter, don't ask
+jenklod-batman run ship                  # the same as jenklod-batman ship
 ```
 
 <Demo name="cli" caption="List the macros, then run ship with ENV=prod." />
 
 - `KEY=VALUE` replaces that parameter in every build step that has it. A key that no step uses is an error, reported before anything runs.
+- A value without `KEY=` fills the macro's [argument](#an-argument).
 - On a terminal it asks first. With `-y`, or without a terminal (cron, CI), it runs straight away.
 - The exit code is non-zero if a step fails. <kbd>ctrl+c</kbd> stops it, and builds already started keep running.
+
+### An argument
+
+Give a macro an argument to use it as a short alias for a build you start often with one value changing, usually the branch. In the editor, <kbd>A</kbd> asks for a parameter name, which must be a parameter of one of its build steps. Then the value typed after the macro's name fills it:
+
+```sh
+# macro cvaden-nuxt-staging: build cvaden-nuxt (ENV=staging, BRANCH=main), argument BRANCH
+jenklod-batman cvaden-nuxt-staging prototype/saved-search-list
+```
+
+This runs the macro with `BRANCH=prototype/saved-search-list`. Without a value, the saved `BRANCH` is used. The macro list and `run --list` show it as `cvaden-nuxt-staging <BRANCH>`.
+
+A shorter command is a shell alias away: `alias jenklod jenklod-batman` (fish) or `alias jenklod=jenklod-batman` (bash, zsh).
 
 All options are in [Command line](/reference/cli). How macros are stored is in [config.toml](/reference/config#macros).

@@ -16,18 +16,21 @@ import (
 	"github.com/krank56/jenklod-batman/internal/secret"
 )
 
-const runUsage = `Usage: jenklod-batman run <macro> [KEY=VALUE…] [-y] [--config FILE]
+const runUsage = `Usage: jenklod-batman <macro> [VALUE] [KEY=VALUE…] [-y] [--config FILE]
+       jenklod-batman run <macro> [VALUE] [KEY=VALUE…] [-y] [--config FILE]
        jenklod-batman run --list
 
-Runs a macro made in the TUI (press m). KEY=VALUE overrides that parameter
+Runs a macro made in the TUI (press m). VALUE fills the macro's argument
+parameter, if it has one (e.g. BRANCH). KEY=VALUE overrides that parameter
 in every build step that has it. On a terminal it shows the steps and asks
 first; -y (or no terminal, e.g. cron) runs straight away. Exits non-zero if
 a step fails.`
 
-// runMacro is the `run` subcommand.
+// runMacro is the `run` subcommand, also reached as `jenklod-batman <macro>`.
 func runMacro(cfgPath string, args []string) error {
 	var (
-		name      string
+		name, arg string
+		hasArg    bool
 		yes, list bool
 		overrides = map[string]string{}
 	)
@@ -58,8 +61,10 @@ func runMacro(cfgPath string, args []string) error {
 			return fmt.Errorf("unknown flag %s\n\n%s", a, runUsage)
 		case name == "":
 			name = a
+		case !hasArg:
+			arg, hasArg = a, true
 		default:
-			return fmt.Errorf("unexpected %q: parameters are KEY=VALUE", a)
+			return fmt.Errorf("unexpected %q: only one VALUE, other parameters are KEY=VALUE", a)
 		}
 	}
 
@@ -73,7 +78,11 @@ func runMacro(cfgPath string, args []string) error {
 			fmt.Println("No macros for " + cfg.URL + " yet: create one in the TUI with m.")
 		}
 		for _, m := range ms {
-			fmt.Printf("%s (%d steps)\n", m.Name, len(m.Steps))
+			usage := m.Name
+			if m.Arg != "" {
+				usage += " <" + m.Arg + ">"
+			}
+			fmt.Printf("%s (%d steps)\n", usage, len(m.Steps))
 			for i, s := range m.Steps {
 				fmt.Printf("  %d. %s\n", i+1, s)
 			}
@@ -86,6 +95,11 @@ func runMacro(cfgPath string, args []string) error {
 	mac, ok := cfg.Macro(name)
 	if !ok {
 		return fmt.Errorf("no macro called %q for %s (run --list)", name, cfg.URL)
+	}
+	if hasArg {
+		if err := macro.SetArg(mac, arg, overrides); err != nil {
+			return err
+		}
 	}
 	if err := macro.CheckOverrides(mac, overrides); err != nil {
 		return err

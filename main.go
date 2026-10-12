@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -31,8 +32,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if len(os.Args) > 1 && os.Args[1] == "run" {
-		return runMacro(defPath, os.Args[2:])
+	if len(os.Args) > 1 {
+		switch a := os.Args[1]; {
+		case a == "run":
+			return runMacro(defPath, os.Args[2:])
+		case !strings.HasPrefix(a, "-"):
+			return runMacro(defPath, os.Args[1:])
+		}
 	}
 	var (
 		cfgPath     = flag.String("config", defPath, "config file")
@@ -42,7 +48,7 @@ func run() error {
 		showVersion = flag.Bool("version", false, "print the version and exit")
 	)
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage: jenklod-batman [flags]\n       jenklod-batman run <macro> [KEY=VALUE…] [-y]   (run --list to list)\n\nFlags:\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage: jenklod-batman [flags]\n       jenklod-batman <macro> [VALUE] [KEY=VALUE…] [-y]   (run --list to list)\n\nFlags:\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()

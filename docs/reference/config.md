@@ -52,7 +52,7 @@ Before v0.2.0, `pinned` was a top-level list. On the next start it moves under t
 
 ## Macros
 
-Each `[[servers."<url>".macros]]` has a `name` and an array of `steps`.
+Each `[[servers."<url>".macros]]` has a `name`, an array of `steps` and, optionally, an `arg`: the build parameter that a value typed after the macro's name fills ([An argument](/guide/macros#an-argument)).
 
 | Key | Type | Applies to | Description |
 |---|---|---|---|
