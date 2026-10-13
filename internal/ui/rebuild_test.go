@@ -11,6 +11,7 @@ import (
 
 	"github.com/krank56/jenklod-batman/internal/config"
 	"github.com/krank56/jenklod-batman/internal/jenkins"
+	"github.com/krank56/jenklod-batman/internal/notify"
 )
 
 func rebuildModel(t *testing.T) (Model, *fakeJenkins) {
@@ -133,5 +134,30 @@ func TestMergeParams(t *testing.T) {
 	}
 	if defs[0].Default != "dev" {
 		t.Error("mergeParams must not change the job's definitions")
+	}
+}
+
+func TestOpenOpensTheJobPage(t *testing.T) {
+	var opened []string
+	openBrowser = func(url string) error { opened = append(opened, url); return nil }
+	t.Cleanup(func() { openBrowser = notify.Open })
+
+	m, _ := rebuildModel(t)
+	m = drive(t, m, key("enter")) // deploy builds
+	m = drive(t, m, key("j"))     // #41
+	m = drive(t, m, key("o"))
+	m = drive(t, m, key("O"))
+	m = drive(t, m, key("enter")) // #41's log
+	m = drive(t, m, key("o"))
+	m = drive(t, m, key("O"))
+
+	want := []string{"/job/gotham/job/deploy/", "/job/gotham/job/deploy/41/", "/job/gotham/job/deploy/", "/job/gotham/job/deploy/41/console"}
+	if len(opened) != len(want) {
+		t.Fatalf("opened %v, want suffixes %v", opened, want)
+	}
+	for i, w := range want {
+		if !strings.HasSuffix(opened[i], w) {
+			t.Errorf("open %d = %s, want …%s", i, opened[i], w)
+		}
 	}
 }

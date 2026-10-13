@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -32,6 +33,8 @@ func (m Model) View() string {
 		body = m.confirmView(bodyH)
 	case m.help:
 		body = m.helpView(bodyH)
+	case m.whatsNew.Version != "":
+		body = m.whatsNewView(bodyH)
 	default:
 		switch m.scr {
 		case scrJobs:
@@ -82,6 +85,9 @@ func (m Model) headerView() string {
 	if n := len(m.cfg.Pins()); n > 0 {
 		right += sPin.Render(fmt.Sprintf("👁 %d watched ", n)) + sDim.Render(fmt.Sprintf("⟳%ds ", m.cfg.PollSeconds))
 	}
+	if m.newVersion != "" {
+		right += sOK.Render("↑ " + m.newVersion + " ")
+	}
 	left := title + host + crumb
 	gap := m.w - lipgloss.Width(left) - lipgloss.Width(right)
 	if gap < 1 {
@@ -128,7 +134,8 @@ func (m Model) footerView() string {
 		add("R", "rebuild")
 		add("x", "abort")
 		add("w", "watch")
-		add("o", "browser")
+		add("o", "job page")
+		add("O", "build page")
 		add("h", "back")
 	case m.scr == scrLog:
 		if len(m.log.inputs) > 0 {
@@ -138,12 +145,20 @@ func (m Model) footerView() string {
 		add("g/G", "top/end")
 		add("R", "rebuild")
 		add("x", "abort")
-		add("o", "browser")
+		add("o", "job page")
+		add("O", "console")
 		add("h", "back")
+	case m.scr == scrParams && m.params.pick != nil:
+		add("↑/↓", "move")
+		add("enter", "pick")
+		add("esc", "close")
 	case m.scr == scrParams && m.params.input != nil:
 		if len(m.params.fields) > 0 {
 			add("tab", "next")
 			add("←/→", "change")
+		}
+		if m.params.textFocused() {
+			add("ctrl+g", "branches")
 		}
 		add("enter", m.params.input.ProceedText)
 		add("ctrl+x", "abort")
@@ -151,6 +166,9 @@ func (m Model) footerView() string {
 	case m.scr == scrParams:
 		add("tab", "next")
 		add("←/→", "change")
+		if m.params.textFocused() {
+			add("ctrl+g", "branches")
+		}
 		if m.params.forMacro {
 			add("enter", "save step")
 		} else {
@@ -172,6 +190,11 @@ func (m Model) footerView() string {
 		}
 	}
 	line := strings.Join(hints, "  ")
+	if m.status != "" && !m.statusErr && lipgloss.Width(line)+2+lipgloss.Width(m.status) > m.w {
+		// Too long to sit beside the hints: it has the line to itself for
+		// the few seconds it lasts. Errors stay, so they don't.
+		return lane + "\n" + sOK.Render(truncate(m.status, m.w))
+	}
 	if m.status != "" {
 		st := sOK
 		if m.statusErr {
@@ -357,12 +380,18 @@ func (m Model) buildsView(h int) string {
 		}
 		return b.String()
 	}
-	if len(d.Builds) == 0 {
+	if len(d.Builds) == 0 && d.Queued == nil {
 		b.WriteString(sDim.Render("  No builds yet. Press b to summon the first one."))
 		return b.String()
 	}
 	b.WriteString(sDim.Render(fmt.Sprintf("    %-7s %-10s %-10s %-18s %s", "BUILD", "RESULT", "STARTED", "DURATION", "CAUSE")) + "\n")
 	h--
+	if q := d.Queued; q != nil {
+		// Not a build yet, so the cursor never lands on it.
+		b.WriteString(fmt.Sprintf("  %s %s %s %s %s %s\n", sWait.Render("…"), pad(sDim.Render("#—"), 7),
+			pad(sWait.Render("QUEUED"), 10), pad("", 10), pad("", 18), sDim.Render(truncate(q.Why, max(0, m.w-60)))))
+		h--
+	}
 	start, end := window(m.builds.cursor, len(d.Builds), h)
 	for i := start; i < end; i++ {
 		bd := d.Builds[i]
@@ -495,6 +524,9 @@ func (m Model) paramsView() string {
 		if f.def.Description != "" && focused {
 			b.WriteString("    " + sDim.Render(truncate(f.def.Description, m.w-6)) + "\n")
 		}
+		if focused && p.pick != nil {
+			b.WriteString(m.pickerView() + "\n")
+		}
 	}
 	return b.String()
 }
@@ -515,6 +547,7 @@ func (m Model) helpView(h int) string {
 		{"/", "search this folder, then every other (fuzzy)"},
 		{"b", "build (asks first; form for parameters)"},
 		{"R", "rebuild: the form filled in from the selected or last build"},
+		{"ctrl+g", "in the build form: pick a GitHub branch for the text field"},
 		{"x", "abort a running build (asks first)"},
 		{"L", "open the last build's log (jobs list)"},
 		{"i", "answer a paused pipeline input (proceed / abort)"},
@@ -522,7 +555,8 @@ func (m Model) helpView(h int) string {
 		{"J/K", "move a watched job down / up"},
 		{"p", "cycle the watch poll interval (saved)"},
 		{"m", "macros: run, create, edit"},
-		{"o", "open in browser"},
+		{"o", "open in browser (builds, log: the job's page)"},
+		{"O", "builds, log: open the build / console in browser"},
 		{"f", "follow log output"},
 		{"r", "refresh"},
 		{"a", "toggle the cat"},
@@ -535,4 +569,35 @@ func (m Model) helpView(h int) string {
 	}
 	b.WriteString("\n" + sDim.Render(fmt.Sprintf("Watched jobs are polled every %ds.  Any key closes this.", m.cfg.PollSeconds)))
 	return lipgloss.Place(m.w, h, lipgloss.Center, lipgloss.Center, sBox.Render(b.String()))
+}
+
+var mdLink = regexp.MustCompile(`\[([^\]]+)\]\([^)]+\)`)
+
+// whatsNewView is the changelog of the version just upgraded to, in a box
+// like help's: headings and bullets, without the Markdown marks.
+func (m Model) whatsNewView(h int) string {
+	width := min(m.w-4, 88)
+	var lines []string
+	for _, l := range strings.Split(m.whatsNew.Notes, "\n") {
+		l = mdLink.ReplaceAllString(l, "$1")
+		l = strings.NewReplacer("`", "", "**", "").Replace(l)
+		switch {
+		case strings.HasPrefix(l, "### "):
+			if len(lines) > 0 {
+				lines = append(lines, "")
+			}
+			lines = append(lines, sLabel.Render(strings.TrimPrefix(l, "### ")))
+		case strings.HasPrefix(l, "- "):
+			lines = append(lines, "• "+strings.TrimPrefix(l, "- "))
+		case strings.TrimSpace(l) != "":
+			lines = append(lines, l)
+		}
+	}
+	body := lipgloss.NewStyle().Width(width - 6).Render(strings.Join(lines, "\n"))
+	if rows := strings.Split(body, "\n"); len(rows) > h-8 {
+		body = strings.Join(rows[:max(1, h-8)], "\n") + "\n" + sDim.Render("…")
+	}
+	box := sTitle.Render("🦇 What's new in "+m.whatsNew.Version) + "\n\n" + body + "\n\n" +
+		sDim.Render("Any key closes this. jenklod-batman changelog lists every version.")
+	return lipgloss.Place(m.w, h, lipgloss.Center, lipgloss.Center, sBox.Render(box))
 }

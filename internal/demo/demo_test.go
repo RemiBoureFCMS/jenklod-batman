@@ -69,6 +69,9 @@ func TestDemoTreeAndDetail(t *testing.T) {
 	if len(d.Params) != 3 || !d.Builds[0].Building || d.Builds[1].Result != "SUCCESS" {
 		t.Errorf("detail = %+v", d)
 	}
+	if urls, err := c.RemoteURLs(ctx, []string{"gotham", "deploy"}); err != nil || len(urls) != 1 || urls[0] != demoRepo {
+		t.Errorf("remote urls = %v, %v", urls, err)
+	}
 }
 
 func TestDemoBuildLifecycle(t *testing.T) {
@@ -83,10 +86,16 @@ func TestDemoBuildLifecycle(t *testing.T) {
 	if n, _ := c.QueuedBuild(ctx, id); n != 0 {
 		t.Fatalf("should still be queued, got #%d", n)
 	}
+	if d, err := c.JobDetail(ctx, path); err != nil || d.Queued == nil || d.Queued.ID != id || d.Queued.Why == "" {
+		t.Fatalf("detail should show the queued build: %+v, %v", d.Queued, err)
+	}
 	clk.add(2 * time.Second)
 	n, err := c.QueuedBuild(ctx, id)
 	if err != nil || n == 0 {
 		t.Fatalf("queued build: n=%d err=%v", n, err)
+	}
+	if d, err := c.JobDetail(ctx, path); err != nil || d.Queued != nil || d.Builds[0].Number != n {
+		t.Fatalf("detail should show #%d instead of the queue: %+v, %v", n, d.Queued, err)
 	}
 
 	// The log only grows, and pauses at the input.

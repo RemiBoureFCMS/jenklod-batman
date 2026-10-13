@@ -1,16 +1,25 @@
 # Releasing
 
+Every user-facing change adds a line under `## Unreleased` in [`CHANGELOG.md`](https://github.com/krank56/jenklod-batman/blob/main/CHANGELOG.md), in the PR that makes it.
+
+To release, rename that heading to the version and date, merge it, then tag the merge:
+
+```md
+## v0.4.0 (2026-10-14)
+```
+
 ```sh
-git tag -a v0.3.0 -m v0.3.0 && git push origin v0.3.0
+git tag -a v0.4.0 -m v0.4.0 && git push origin v0.4.0
 ```
 
 The `release` workflow then:
 
 1. runs `make vet test`,
-2. builds the archives with `make dist` (macOS and Linux, amd64 and arm64, plus `checksums.txt`),
-3. publishes them on the GitHub release.
+2. takes the tag's section of `CHANGELOG.md` as the release notes (`go run . changelog v0.4.0`), and fails if there isn't one,
+3. builds the archives with `make dist` (macOS and Linux, amd64 and arm64, plus `checksums.txt`),
+4. publishes them on the GitHub release.
 
-To write the release notes yourself, draft the release before pushing the tag; the workflow adds the files to it. Otherwise the notes are generated.
+Add a new `## Unreleased` heading on top for what comes next. The app embeds `CHANGELOG.md`, so a release shows its own section as "what's new" on first launch, and `jenklod-batman update` prints the notes of every version it skips.
 
 ## Homebrew
 

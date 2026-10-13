@@ -42,7 +42,8 @@
 | <kbd>x</kbd> | Abort the selected build (asks first) |
 | <kbd>i</kbd> | Answer a pending input |
 | <kbd>w</kbd> | Watch or stop watching |
-| <kbd>o</kbd> | Open the build in the browser |
+| <kbd>o</kbd> | Open the job's page in the browser |
+| <kbd>O</kbd> | Open the selected build in the browser |
 | <kbd>r</kbd> | Refresh |
 
 ## Log
@@ -54,7 +55,8 @@
 | <kbd>i</kbd> | Answer a pending input |
 | <kbd>R</kbd> | [Rebuild](/guide/browsing#rebuilding) with this build's parameters |
 | <kbd>x</kbd> | Abort the build (asks first) |
-| <kbd>o</kbd> | Open the console in the browser |
+| <kbd>o</kbd> | Open the job's page in the browser |
+| <kbd>O</kbd> | Open the build's console in the browser |
 
 ## Forms
 
@@ -62,6 +64,7 @@
 |---|---|
 | <kbd>tab</kbd> / <kbd>shift+tab</kbd> | Next / previous field |
 | <kbd>←</kbd>/<kbd>→</kbd>, <kbd>space</kbd> | Change a choice or a checkbox |
+| <kbd>ctrl+g</kbd> | [Pick a GitHub branch](/guide/browsing#branches) for the text field |
 | <kbd>enter</kbd> | Build, proceed, or save the macro step |
 | <kbd>ctrl+x</kbd> | Abort the input step |
 | <kbd>esc</kbd> | Cancel |

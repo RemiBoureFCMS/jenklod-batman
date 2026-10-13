@@ -25,6 +25,7 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/install', activeMatch: '/guide/' },
       { text: 'Reference', link: '/reference/keys', activeMatch: '/reference/' },
       { text: 'Contributing', link: '/contributing/development', activeMatch: '/contributing/' },
+      { text: 'Changelog', link: '/changelog' },
       { text: 'Releases', link: `${repo}/releases` },
     ],
     sidebar: [

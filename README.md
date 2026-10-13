@@ -21,7 +21,7 @@ brew install krank56/tap/jenklod-batman
 go install github.com/krank56/jenklod-batman@latest
 ```
 
-Prebuilt archives for macOS and Linux (amd64 and arm64) are attached to each [release](https://github.com/krank56/jenklod-batman/releases). On first launch a setup form asks for your Jenkins URL, user and API token. The token goes to the system keyring, never to disk ([first run](https://jenklod-batman.ytalbi.com/guide/first-run)).
+Prebuilt archives for macOS and Linux (amd64 and arm64) are attached to each [release](https://github.com/krank56/jenklod-batman/releases). `jenklod-batman update` upgrades whichever way you installed it, and the [changelog](CHANGELOG.md) lists what changed. On first launch a setup form asks for your Jenkins URL, user and API token. The token goes to the system keyring, never to disk ([first run](https://jenklod-batman.ytalbi.com/guide/first-run)).
 
 ## Highlights
 
@@ -40,6 +40,7 @@ Prebuilt archives for macOS and Linux (amd64 and arm64) are attached to each [re
 | `/` | search: fuzzy matches in the current folder first, then in every other folder |
 | `b` | build (a form opens for parameterized jobs; always asks y/n) |
 | `R` | rebuild: the build form filled in with the selected build's parameters (the last build's, in the jobs list) |
+| `ctrl+g` | in the build form: pick a GitHub branch for the text field (needs [gh](https://cli.github.com)) |
 | `x` | abort a running build (asks y/n); in the jobs list, the job's last build |
 | `L` | in the jobs list: open the job's last build log |
 | `i` | answer a paused pipeline `input` step, e.g. "Deploy to prod?" |
@@ -49,7 +50,7 @@ Prebuilt archives for macOS and Linux (amd64 and arm64) are attached to each [re
 | `m` | macros |
 | `o` | open in browser |
 | `f` | follow log output |
-| `r` | refresh |
+| `r` | refresh (a job's builds also refresh themselves while one is queued or running) |
 | `a` | toggle the cat animation |
 | `?` | help |
 | `q` | back / quit |

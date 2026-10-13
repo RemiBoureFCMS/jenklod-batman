@@ -1,5 +1,5 @@
-# Push a v* tag to publish a release. Draft the release by hand first to
-# write its notes; otherwise GitHub generates them. The Homebrew tap
+# Push a v* tag to publish a release. Its notes are the tag's section of
+# CHANGELOG.md, and the release fails without one. The Homebrew tap
 # (krank56/homebrew-tap) picks the new release up on its own within the hour.
 name: release
 
@@ -24,6 +24,11 @@ jobs:
 
       - run: make vet test
 
+      - name: Release notes from CHANGELOG.md
+        env:
+          TAG: ${{ github.ref_name }}
+        run: go run . changelog "$TAG" > notes.md
+
       - run: make dist VERSION=${{ github.ref_name }}
 
       - name: Publish
@@ -32,7 +37,8 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --notes-file notes.md
             gh release upload "$TAG" dist/*.tar.gz dist/checksums.txt --clobber
           else
-            gh release create "$TAG" dist/*.tar.gz dist/checksums.txt --title "$TAG" --generate-notes
+            gh release create "$TAG" dist/*.tar.gz dist/checksums.txt --title "$TAG" --notes-file notes.md
           fi

@@ -24,6 +24,8 @@ type Config struct {
 	URL         string `toml:"url"`
 	User        string `toml:"user"`
 	PollSeconds int    `toml:"poll_seconds"`
+	// CheckUpdates turns the daily check for a new release off when false.
+	CheckUpdates *bool `toml:"check_updates,omitempty"`
 	// Pinned is the pre-0.2 list of pins, not tied to a controller. Load
 	// moves it into Servers; it is kept only to read old files.
 	Pinned []string `toml:"pinned,omitempty"`
@@ -37,6 +39,9 @@ type Config struct {
 type Server struct {
 	Pinned []string `toml:"pinned,omitempty"`
 	Macros []Macro  `toml:"macros,omitempty"`
+	// Repos maps a job (by full name) to the GitHub repository its branch
+	// picker lists: owner/name, host/owner/name, or a clone URL.
+	Repos map[string]string `toml:"repos,omitempty"`
 }
 
 // DefaultPath honours $XDG_CONFIG_HOME, falling back to ~/.config.
@@ -74,6 +79,9 @@ func Load(path string) (*Config, error) {
 	}
 	return c, nil
 }
+
+// UpdatesOn reports whether the TUI checks for new releases (the default).
+func (c *Config) UpdatesOn() bool { return c.CheckUpdates == nil || *c.CheckUpdates }
 
 // Complete reports whether URL and user are set.
 func (c *Config) Complete() bool { return c.URL != "" && c.User != "" }
@@ -149,6 +157,23 @@ func (c *Config) MovePin(fullName string, delta int) bool {
 	}
 	s.Pinned[i], s.Pinned[j] = s.Pinned[j], s.Pinned[i]
 	return true
+}
+
+// Repo is the GitHub repository set for a job, or "".
+func (c *Config) Repo(fullName string) string {
+	if s := c.Servers[serverKey(c.URL)]; s != nil {
+		return s.Repos[fullName]
+	}
+	return ""
+}
+
+// SetRepo sets the GitHub repository of a job.
+func (c *Config) SetRepo(fullName, repo string) {
+	s := c.server()
+	if s.Repos == nil {
+		s.Repos = map[string]string{}
+	}
+	s.Repos[fullName] = repo
 }
 
 // NextPoll is the preset interval after the current one, wrapping around.

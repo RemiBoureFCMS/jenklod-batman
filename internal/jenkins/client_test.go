@@ -280,3 +280,59 @@ func TestTriggerQueuedFollowsTheQueue(t *testing.T) {
 		t.Errorf("cancelled: err = %v", err)
 	}
 }
+
+func TestJobDetailQueued(t *testing.T) {
+	queued := true
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if tree := r.URL.Query().Get("tree"); !strings.Contains(tree, "queueItem[id,why]") {
+			t.Errorf("tree lacks the queue item: %s", tree)
+		}
+		if queued {
+			w.Write([]byte(`{"name":"deploy","buildable":true,"builds":[],
+				"queueItem":{"_class":"hudson.model.Queue$WaitingItem","id":31,"why":"In the quiet period. Expires in 4.9 sec"}}`))
+			return
+		}
+		w.Write([]byte(`{"name":"deploy","buildable":true,"builds":[],"queueItem":null}`))
+	})
+	d, err := c.JobDetail(context.Background(), []string{"deploy"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := (&Queued{ID: 31, Why: "In the quiet period. Expires in 4.9 sec"}); !reflect.DeepEqual(d.Queued, want) {
+		t.Errorf("queued = %+v, want %+v", d.Queued, want)
+	}
+	queued = false
+	if d, err = c.JobDetail(context.Background(), []string{"deploy"}); err != nil || d.Queued != nil {
+		t.Errorf("nothing queued: %+v, %v", d.Queued, err)
+	}
+}
+
+func TestRemoteURLs(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if tree := r.URL.Query().Get("tree"); tree != "lastBuild[actions[remoteUrls]]" {
+			t.Errorf("tree = %s", tree)
+		}
+		// The app's checkout, a shared library's, and the app again from a
+		// second checkout step.
+		w.Write([]byte(`{"lastBuild":{"actions":[{},{"_class":"hudson.model.CauseAction"},
+			{"_class":"hudson.plugins.git.util.BuildData","remoteUrls":["https://github.com/wayne/gotham.git"]},
+			{"_class":"hudson.plugins.git.util.BuildData","remoteUrls":["git@github.com:wayne/pipeline-lib.git"]},
+			{"_class":"hudson.plugins.git.util.BuildData","remoteUrls":["https://github.com/wayne/gotham.git"]}]}}`))
+	})
+	got, err := c.RemoteURLs(context.Background(), []string{"deploy"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"https://github.com/wayne/gotham.git", "git@github.com:wayne/pipeline-lib.git"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("urls = %v, want %v", got, want)
+	}
+}
+
+func TestRemoteURLsNeverBuilt(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"lastBuild":null}`))
+	})
+	if got, err := c.RemoteURLs(context.Background(), []string{"deploy"}); err != nil || len(got) != 0 {
+		t.Errorf("urls = %v, err = %v", got, err)
+	}
+}
