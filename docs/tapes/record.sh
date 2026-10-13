@@ -3,7 +3,7 @@
 #   docs/tapes/record.sh tour search macros input
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-go build -o bin/jenklod-batman .
+go build -o bin/jenklod-batman . && ln -sf jenklod-batman bin/jk
 go build -o bin/demo-jenkins ./cmd/demo-jenkins
 work=$(mktemp -d)
 trap 'kill $(jobs -p) 2>/dev/null || true; rm -rf "$work"' EXIT

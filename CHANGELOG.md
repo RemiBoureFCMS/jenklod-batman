@@ -1,8 +1,12 @@
 # Changelog
 
-What changed in each release of jenklod-batman. `jenklod-batman changelog` prints this file, and the first launch after an upgrade shows what's new.
+What changed in each release of jenklod-batman. `jk changelog` prints this file, and the first launch after an upgrade shows what's new.
 
 ## Unreleased
+
+### `jk`
+- `jk` is short for `jenklod-batman`, after the keys that move the cursor. Homebrew, the release archives and `make install` put it next to the binary.
+- Usage lines and hints show the name you ran: `jk ship <VERSION>` when you ran `jk`.
 
 ### Builds
 - A build you start shows up in the list on its own. While it waits in the Jenkins queue it's a `QUEUED` row with Jenkins' reason; once it starts, the cursor moves to it.
@@ -16,8 +20,8 @@ What changed in each release of jenklod-batman. `jenklod-batman changelog` print
 - The repository is the one the job's last build checked out. When that's unclear, the picker asks once and saves the answer under `repos` in the config.
 
 ### Macros
-- A macro can take an argument: one of its build parameters, set with `A` in the editor (`arg` in the config). The word after its name fills it, so `jenklod-batman ship v2.8.0` runs `ship` with `VERSION=v2.8.0`.
-- `run` is optional: `jenklod-batman ship` is `jenklod-batman run ship`. A macro named like a command (`run`, `update`, `changelog`) still needs `run`.
+- A macro can take an argument: one of its build parameters, set with `A` in the editor (`arg` in the config). The word after its name fills it, so `jk ship v2.8.0` runs `ship` with `VERSION=v2.8.0`.
+- `run` is optional: `jk ship` is `jk run ship`. A macro named like a command (`run`, `update`, `changelog`) still needs `run`.
 - The macro list and `run --list` show a macro's argument: `ship <VERSION>`.
 
 ### Browser
@@ -25,8 +29,8 @@ What changed in each release of jenklod-batman. `jenklod-batman changelog` print
 
 ### Updates
 - The TUI shows `↑ vX.Y.Z` in the header when a newer release is out, and says so once in the status bar. It checks at most once a day; `check_updates = false` in the config turns it off.
-- `jenklod-batman update` installs the latest release the way this one was installed: Homebrew, `go install`, or the release archive (checked against `checksums.txt`). `update --check` only says whether there's one.
-- `jenklod-batman changelog` prints this changelog, and the first launch after an upgrade shows what's new.
+- `jk update` installs the latest release the way this one was installed: Homebrew, `go install`, or the release archive (checked against `checksums.txt`). `update --check` only says whether there's one.
+- `jk changelog` prints this changelog, and the first launch after an upgrade shows what's new.
 
 ## v0.3.0 (2026-09-29)
 

@@ -613,7 +613,7 @@ func (m Model) saveMacro() (tea.Model, tea.Cmd) {
 			m.macros.cursor = i
 		}
 	}
-	m.setStatus("Saved macro "+name+" — run it here, or: jenklod-batman "+usage(saved), false)
+	m.setStatus("Saved macro "+name+" — run it here, or: "+m.cmd+" "+usage(saved), false)
 	return m, nil
 }
 

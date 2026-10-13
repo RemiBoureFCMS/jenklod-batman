@@ -3,7 +3,7 @@
 jenklod-batman is Go with [Bubble Tea](https://github.com/charmbracelet/bubbletea). Go's version comes from `go.mod` (the repository's `mise.toml` pins it too).
 
 ```sh
-make build        # bin/jenklod-batman, stamped with git describe
+make build        # bin/jenklod-batman and its jk link, stamped with git describe
 make test         # go test ./...
 make vet
 ```

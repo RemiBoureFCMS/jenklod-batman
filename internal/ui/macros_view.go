@@ -9,7 +9,7 @@ import (
 
 func (m Model) macrosView(h int) string {
 	var b strings.Builder
-	b.WriteString(sLabel.Render("Macros") + sDim.Render("  on "+m.client.Host()+" · also: jenklod-batman <name>") + "\n\n")
+	b.WriteString(sLabel.Render("Macros") + sDim.Render("  on "+m.client.Host()+" · also: "+m.cmd+" <name>") + "\n\n")
 	h -= 2
 	ms := m.cfg.Macros()
 	if len(ms) == 0 {
@@ -107,9 +107,9 @@ func (m Model) macroEditView(h int) string {
 	}
 	b.WriteString(sDim.Render("Macro ") + name + dirty + "\n")
 	if e.arg != "" {
-		b.WriteString(sDim.Render("Argument: ") + e.arg + sDim.Render("  — jenklod-batman "+m.macroEditTitle()+" <"+e.arg+">") + "\n")
+		b.WriteString(sDim.Render("Argument: ") + e.arg + sDim.Render("  — "+m.cmd+" "+m.macroEditTitle()+" <"+e.arg+">") + "\n")
 	} else {
-		b.WriteString(sDim.Render("No argument (A sets one, e.g. BRANCH: jenklod-batman "+m.macroEditTitle()+" <value>)") + "\n")
+		b.WriteString(sDim.Render("No argument (A sets one, e.g. BRANCH: "+m.cmd+" "+m.macroEditTitle()+" <value>)") + "\n")
 	}
 	b.WriteString("\n")
 	h -= 3

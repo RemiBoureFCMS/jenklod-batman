@@ -5,7 +5,7 @@ Env JB_GITHUB_API "http://127.0.0.1:8765/api/graphql"
 Output docs/public/media/branches.mp4
 
 Hide
-Type "clear && jenklod-batman" Enter
+Type "clear && jk" Enter
 Sleep 1.5s
 Space
 Show

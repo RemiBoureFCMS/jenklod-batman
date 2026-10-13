@@ -7,9 +7,9 @@ Hide
 Type "clear" Enter
 Show
 Sleep 500ms
-Type "jenklod-batman run --list" Enter
+Type "jk run --list" Enter
 Sleep 2s
-Type "jenklod-batman ship v2.8.0 ENV=prod -y" Enter
+Type "jk ship v2.8.0 ENV=prod -y" Enter
 Sleep 26s
 Screenshot docs/public/media/cli.png
 Sleep 2s

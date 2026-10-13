@@ -19,7 +19,7 @@ The `release` workflow then:
 3. builds the archives with `make dist` (macOS and Linux, amd64 and arm64, plus `checksums.txt`),
 4. publishes them on the GitHub release.
 
-Add a new `## Unreleased` heading on top for what comes next. The app embeds `CHANGELOG.md`, so a release shows its own section as "what's new" on first launch, and `jenklod-batman update` prints the notes of every version it skips.
+Add a new `## Unreleased` heading on top for what comes next. The app embeds `CHANGELOG.md`, so a release shows its own section as "what's new" on first launch, and `jk update` prints the notes of every version it skips.
 
 ## Homebrew
 

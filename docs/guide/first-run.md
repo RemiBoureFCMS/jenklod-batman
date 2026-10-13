@@ -22,9 +22,9 @@ The token is never written to disk. `JENKINS_TOKEN` in the environment overrides
 ## Useful flags
 
 ```sh
-jenklod-batman --setup          # enter URL / user / token again
-jenklod-batman --forget-token   # remove the token from the keyring
-jenklod-batman --no-anim        # skip the splash and keep the cat still
+jk --setup          # enter URL / user / token again
+jk --forget-token   # remove the token from the keyring
+jk --no-anim        # skip the splash and keep the cat still
 ```
 
 All of them are listed in [Command line](/reference/cli).

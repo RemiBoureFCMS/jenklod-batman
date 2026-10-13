@@ -1,6 +1,8 @@
 # Command line
 
-## `jenklod-batman`
+`jk` and `jenklod-batman` are the same program ([the short name](/guide/install#the-short-name)). Usage lines and hints show the one you ran.
+
+## `jk`
 
 Starts the TUI.
 
@@ -12,14 +14,14 @@ Starts the TUI.
 | `--no-anim` | | Skip the splash and keep the cat still. |
 | `--version` | | Print the version and exit. |
 
-## `jenklod-batman <macro>`, `jenklod-batman run`
+## `jk <macro>`, `jk run`
 
-Runs a [macro](/guide/macros) without the TUI. `run` is optional: `jenklod-batman ship` and `jenklod-batman run ship` are the same.
+Runs a [macro](/guide/macros) without the TUI. `run` is optional: `jk ship` and `jk run ship` are the same.
 
 ```text
-jenklod-batman <macro> [VALUE] [KEY=VALUE…] [-y] [--config FILE]
-jenklod-batman run <macro> [VALUE] [KEY=VALUE…] [-y] [--config FILE]
-jenklod-batman run --list
+jk <macro> [VALUE] [KEY=VALUE…] [-y] [--config FILE]
+jk run <macro> [VALUE] [KEY=VALUE…] [-y] [--config FILE]
+jk run --list
 ```
 
 | Argument | Description |
@@ -40,12 +42,12 @@ jenklod-batman run --list
 - **Without `run`,** the first word must not start with `-`: anything else starts the TUI with its flags. A macro named `run`, `update` or `changelog` needs `run` in front, since those are commands.
 - **Interrupting:** <kbd>ctrl+c</kbd> or `SIGTERM` stops the run. Builds already started keep running.
 
-## `jenklod-batman update`
+## `jk update`
 
 Installs the latest release.
 
 ```text
-jenklod-batman update [--check]
+jk update [--check]
 ```
 
 | Argument | Description |
@@ -63,10 +65,10 @@ It updates the way this copy was installed:
 
 Then it prints the release notes of every version since yours. A development build (`dev`, or a version like `v0.3.0-12-gabc1234` from `make build`) refuses to update.
 
-## `jenklod-batman changelog`
+## `jk changelog`
 
 ```text
-jenklod-batman changelog [VERSION]
+jk changelog [VERSION]
 ```
 
 Prints the [changelog](/changelog), which is built into the binary, or only the section of `VERSION` (`v0.3.0`, or `Unreleased`). Exits `1` if there's no such section.

@@ -68,10 +68,10 @@ On the macro list, <kbd>enter</kbd> shows the steps and asks y/n. The macro then
 ## Running from a shell
 
 ```sh
-jenklod-batman run --list                # list the macros for the configured Jenkins
-jenklod-batman ship                      # show the steps, ask y/n, run
-jenklod-batman ship ENV=prod -y          # override a parameter, don't ask
-jenklod-batman run ship                  # the same as jenklod-batman ship
+jk run --list            # list the macros for the configured Jenkins
+jk ship                  # show the steps, ask y/n, run
+jk ship ENV=prod -y      # override a parameter, don't ask
+jk run ship              # the same as jk ship
 ```
 
 <Demo name="cli" caption="List the macros, then run ship for v2.8.0, its argument, with ENV=prod." />
@@ -87,11 +87,11 @@ Give a macro an argument to use it as a short alias for a build you start often 
 
 ```sh
 # macro cvaden-nuxt-staging: build cvaden-nuxt (ENV=staging, BRANCH=main), argument BRANCH
-jenklod-batman cvaden-nuxt-staging prototype/saved-search-list
+jk cvaden-nuxt-staging prototype/saved-search-list
 ```
 
 This runs the macro with `BRANCH=prototype/saved-search-list`. Without a value, the saved `BRANCH` is used. The macro list and `run --list` show it as `cvaden-nuxt-staging <BRANCH>`.
 
-A shorter command is a shell alias away: `alias jenklod jenklod-batman` (fish) or `alias jenklod=jenklod-batman` (bash, zsh).
+`jk` is jenklod-batman's [short name](/guide/install#the-short-name).
 
 All options are in [Command line](/reference/cli). How macros are stored is in [config.toml](/reference/config#macros).

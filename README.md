@@ -21,7 +21,9 @@ brew install krank56/tap/jenklod-batman
 go install github.com/krank56/jenklod-batman@latest
 ```
 
-Prebuilt archives for macOS and Linux (amd64 and arm64) are attached to each [release](https://github.com/krank56/jenklod-batman/releases). `jenklod-batman update` upgrades whichever way you installed it, and the [changelog](CHANGELOG.md) lists what changed. On first launch a setup form asks for your Jenkins URL, user and API token. The token goes to the system keyring, never to disk ([first run](https://jenklod-batman.ytalbi.com/guide/first-run)).
+Homebrew and the release archives also install `jk`, short for `jenklod-batman` and named after the keys that move the cursor. After a `go install`, `alias jk jenklod-batman` (fish) or `alias jk=jenklod-batman` (bash, zsh) does the same.
+
+Prebuilt archives for macOS and Linux (amd64 and arm64) are attached to each [release](https://github.com/krank56/jenklod-batman/releases). `jk update` upgrades whichever way you installed it, and the [changelog](CHANGELOG.md) lists what changed. On first launch a setup form asks for your Jenkins URL, user and API token. The token goes to the system keyring, never to disk ([first run](https://jenklod-batman.ytalbi.com/guide/first-run)).
 
 ## Highlights
 
@@ -29,9 +31,9 @@ Prebuilt archives for macOS and Linux (amd64 and arm64) are attached to each [re
 - **[Search](https://jenklod-batman.ytalbi.com/guide/search):** `/` fuzzy-matches jobs in every folder.
 - **[Pipeline inputs](https://jenklod-batman.ytalbi.com/guide/inputs):** see and answer "Deploy to prod?" from the terminal.
 - **[Rebuild and branches](https://jenklod-batman.ytalbi.com/guide/browsing#rebuilding):** `R` refills the build form from an earlier build, `ctrl+g` picks a GitHub branch for a parameter, and the new build is followed from the queue into the list.
-- **[Macros](https://jenklod-batman.ytalbi.com/guide/macros):** saved build sequences, run in the TUI or with `jenklod-batman <name>`. Give one an argument to make it an alias: `jenklod-batman cvaden-nuxt-staging my-branch`.
+- **[Macros](https://jenklod-batman.ytalbi.com/guide/macros):** saved build sequences, run in the TUI or with `jk <name>`. Give one an argument to make it an alias: `jk cvaden-nuxt-staging my-branch`.
 
-- **[Updates](https://jenklod-batman.ytalbi.com/guide/install#upgrading):** the header shows when a release is out, `jenklod-batman update` installs it, and `jenklod-batman changelog` says what changed.
+- **[Updates](https://jenklod-batman.ytalbi.com/guide/install#upgrading):** the header shows when a release is out, `jk update` installs it, and `jk changelog` says what changed.
 
 ## Keys
 
