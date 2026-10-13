@@ -280,3 +280,29 @@ func TestTriggerQueuedFollowsTheQueue(t *testing.T) {
 		t.Errorf("cancelled: err = %v", err)
 	}
 }
+
+func TestJobDetailQueued(t *testing.T) {
+	queued := true
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if tree := r.URL.Query().Get("tree"); !strings.Contains(tree, "queueItem[id,why]") {
+			t.Errorf("tree lacks the queue item: %s", tree)
+		}
+		if queued {
+			w.Write([]byte(`{"name":"deploy","buildable":true,"builds":[],
+				"queueItem":{"_class":"hudson.model.Queue$WaitingItem","id":31,"why":"In the quiet period. Expires in 4.9 sec"}}`))
+			return
+		}
+		w.Write([]byte(`{"name":"deploy","buildable":true,"builds":[],"queueItem":null}`))
+	})
+	d, err := c.JobDetail(context.Background(), []string{"deploy"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := (&Queued{ID: 31, Why: "In the quiet period. Expires in 4.9 sec"}); !reflect.DeepEqual(d.Queued, want) {
+		t.Errorf("queued = %+v, want %+v", d.Queued, want)
+	}
+	queued = false
+	if d, err = c.JobDetail(context.Background(), []string{"deploy"}); err != nil || d.Queued != nil {
+		t.Errorf("nothing queued: %+v, %v", d.Queued, err)
+	}
+}

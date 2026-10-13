@@ -73,6 +73,10 @@ type Model struct {
 	watchGen     int // bumped when the poll interval changes
 	notifyWarned bool
 
+	// follows are builds started from here and still in the queue, by
+	// queue item.
+	follows map[int]*follow
+
 	// index is every job and folder, for searching across folders.
 	index        []jenkins.Job
 	indexBy      map[string]jenkins.Job
@@ -114,6 +118,14 @@ type buildsState struct {
 	// noInputAPI is set when the controller lacks the Stage View API, so
 	// pending input steps cannot be listed.
 	noInputAPI bool
+	// polling is a background refresh in flight; unlike loading, it shows
+	// no spinner.
+	polling bool
+	// jumpTo is the queue item of a build started from here: the cursor
+	// moves to it once it starts, unless moved by hand meanwhile.
+	jumpTo int
+	// selectNum puts the cursor on this build once the list has it.
+	selectNum int
 }
 
 type logState struct {
@@ -172,19 +184,28 @@ type watchState struct {
 	err      error           // the last poll failed (deleted, renamed, forbidden…)
 }
 
+// follow is a build started from here, waiting in the queue for a number.
+type follow struct {
+	job     jenkins.Job
+	since   time.Time
+	fromLog int  // the log it was rebuilt from, to switch to the new one; 0 if none
+	warned  bool // a failed check was reported
+}
+
 // New builds the root model.
 func New(o Options) Model {
 	fi := textinput.New()
 	fi.Prompt = "/"
 	fi.Placeholder = "search all folders"
 	m := Model{
-		cfg:    o.Config,
-		client: o.Client,
-		anim:   !o.NoAnim,
-		cat:    newCat(time.Now().UnixNano()),
-		wiz:    newWizard(o.Config, o.WizardFn),
-		watch:  map[string]*watchState{},
-		scr:    scrSplash,
+		cfg:     o.Config,
+		client:  o.Client,
+		anim:    !o.NoAnim,
+		cat:     newCat(time.Now().UnixNano()),
+		wiz:     newWizard(o.Config, o.WizardFn),
+		watch:   map[string]*watchState{},
+		follows: map[int]*follow{},
+		scr:     scrSplash,
 	}
 	m.jobs.filter = fi
 	m.log.follow = true
@@ -256,6 +277,21 @@ type actionMsg struct {
 	ok      string
 	err     error
 	refresh bool
+}
+
+type triggeredMsg struct {
+	job     jenkins.Job
+	id      int // the queue item, 0 if Jenkins did not say
+	fromLog int
+	err     error
+}
+
+type queueTickMsg struct{ id int }
+
+type queueMsg struct {
+	id     int
+	number int // 0 while still queued
+	err    error
 }
 
 type watchResultMsg struct {
@@ -377,13 +413,46 @@ func (m Model) loadLog(gen int, job jenkins.Job, number int, offset int64) tea.C
 
 func (m Model) trigger(job jenkins.Job, params map[string]string) tea.Cmd {
 	c := m.client
+	// Confirmed on a log, or on a form that returns to one: a rebuild.
+	fromLog := 0
+	if m.scr == scrLog || m.scr == scrParams && m.params.returnTo == scrLog {
+		fromLog = m.log.number
+	}
 	return func() tea.Msg {
 		cx, cancel := ctx()
 		defer cancel()
-		if err := c.Trigger(cx, job.Path, params); err != nil {
-			return actionMsg{err: fmt.Errorf("build %s: %w", job.FullName(), err)}
+		id, err := c.TriggerQueued(cx, job.Path, params)
+		if err != nil {
+			return triggeredMsg{job: job, err: fmt.Errorf("build %s: %w", job.FullName(), err)}
 		}
-		return actionMsg{ok: "🦇 Build queued: " + job.FullName(), refresh: true}
+		return triggeredMsg{job: job, id: id, fromLog: fromLog}
+	}
+}
+
+// queueFast is how often a followed queue item is checked at first: a
+// quiet period is over in seconds.
+const queueFast = 2 * time.Second
+
+// queueDelay is the wait before checking f again: quickly for a minute,
+// then on the watch interval, for a build stuck waiting for an executor.
+func (m Model) queueDelay(f *follow) time.Duration {
+	if time.Since(f.since) < time.Minute {
+		return queueFast
+	}
+	return time.Duration(m.cfg.PollSeconds) * time.Second
+}
+
+func queueTick(id int, d time.Duration) tea.Cmd {
+	return tea.Tick(d, func(time.Time) tea.Msg { return queueTickMsg{id: id} })
+}
+
+func (m Model) checkQueue(id int) tea.Cmd {
+	c := m.client
+	return func() tea.Msg {
+		cx, cancel := ctx()
+		defer cancel()
+		n, err := c.QueuedBuild(cx, id)
+		return queueMsg{id: id, number: n, err: err}
 	}
 }
 
@@ -481,9 +550,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.status = ""
 		}
 		var cmd tea.Cmd
-		// Keep a running job's history fresh while looking at it.
-		if m.scr == scrBuilds && !m.builds.loading && m.frame%50 == 0 && m.anyBuilding() {
-			m.builds.loading = true
+		// Keep a running or queued job's history fresh while looking at it.
+		if every := m.refreshEvery(); m.scr == scrBuilds && !m.builds.loading && !m.builds.polling &&
+			every > 0 && m.frame%every == 0 {
+			m.builds.polling = true
 			cmd = m.loadDetail(m.builds.job)
 		}
 		return m, tea.Batch(tick(), cmd)
@@ -542,14 +612,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.job.FullName() != m.builds.job.FullName() {
 			return m, nil
 		}
-		m.builds.loading = false
+		// A background refresh that fails like the last one stays quiet,
+		// and the list stays until one works.
+		quiet := !m.builds.loading && m.builds.err != nil
+		m.builds.loading, m.builds.polling = false, false
 		m.builds.err = msg.err
 		if msg.err != nil {
-			m.setErr(msg.err)
+			if !quiet {
+				m.setErr(msg.err)
+			}
 			return m, nil
+		}
+		// New builds push the rows down: keep the cursor on its build, or
+		// move it to the one asked for once it is there.
+		keep := 0
+		if b, ok := m.selectedBuild(); ok {
+			keep = b.Number
 		}
 		m.builds.detail = msg.detail
 		m.builds.noInputAPI = msg.noInputAPI
+		if i := buildIndex(msg.detail, m.builds.selectNum); i >= 0 {
+			m.builds.cursor, m.builds.selectNum = i, 0
+		} else if i := buildIndex(msg.detail, keep); i >= 0 {
+			m.builds.cursor = i
+		}
 		m.builds.cursor = clamp(m.builds.cursor, 0, max(0, len(msg.detail.Builds)-1))
 		if m.builds.pendingBuild {
 			m.builds.pendingBuild = false
@@ -629,18 +715,36 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else if msg.ok != "" {
 			m.setStatus(msg.ok, false)
 		}
-		if msg.refresh && m.scr == scrBuilds {
-			m.builds.loading = true
-			return m, m.loadDetail(m.builds.job)
-		}
-		if msg.refresh && m.scr == scrLog {
-			m.log.inputs = nil
-			return m, m.loadLogInputs(m.log.gen, m.log.job, m.log.number)
-		}
-		if msg.refresh && m.scr == scrJobs {
-			return m, m.pollWatched()
+		if msg.refresh {
+			return m, m.refresh()
 		}
 		return m, nil
+
+	case triggeredMsg:
+		if msg.err != nil {
+			m.setErr(msg.err)
+			return m, nil
+		}
+		m.setStatus("🦇 Build queued: "+msg.job.FullName(), false)
+		cmd := m.refresh()
+		if msg.id > 0 {
+			f := &follow{job: msg.job, since: time.Now(), fromLog: msg.fromLog}
+			m.follows[msg.id] = f
+			if m.builds.job.FullName() == msg.job.FullName() {
+				m.builds.jumpTo = msg.id
+			}
+			cmd = tea.Batch(cmd, queueTick(msg.id, m.queueDelay(f)))
+		}
+		return m, cmd
+
+	case queueTickMsg:
+		if m.follows[msg.id] == nil {
+			return m, nil
+		}
+		return m, m.checkQueue(msg.id)
+
+	case queueMsg:
+		return m.handleQueue(msg)
 
 	case watchTickMsg:
 		if msg.gen != m.watchGen {
@@ -760,6 +864,99 @@ func (m Model) anyBuilding() bool {
 		}
 	}
 	return false
+}
+
+// queued reports whether the job on the builds screen has a build in the
+// queue, as Jenkins says or as started from here.
+func (m Model) queued() bool {
+	if d := m.builds.detail; d != nil && d.Queued != nil {
+		return true
+	}
+	for _, f := range m.follows {
+		if f.job.FullName() == m.builds.job.FullName() {
+			return true
+		}
+	}
+	return false
+}
+
+// refreshEvery is how many frames apart the builds screen refreshes on its
+// own: often while a build waits in the queue, less while one runs, never
+// when the job is idle.
+func (m Model) refreshEvery() int {
+	switch {
+	case m.queued():
+		return int(queueFast / frameDelay)
+	case m.anyBuilding():
+		return int(5 * time.Second / frameDelay)
+	}
+	return 0
+}
+
+// buildIndex is the row of build number in d, or -1.
+func buildIndex(d *jenkins.Detail, number int) int {
+	return slices.IndexFunc(d.Builds, func(b jenkins.Build) bool { return b.Number == number })
+}
+
+// refresh reloads what the screen shows after an action changed it.
+func (m *Model) refresh() tea.Cmd {
+	switch m.scr {
+	case scrBuilds:
+		m.builds.loading = true
+		return m.loadDetail(m.builds.job)
+	case scrLog:
+		m.log.inputs = nil
+		return m.loadLogInputs(m.log.gen, m.log.job, m.log.number)
+	case scrJobs:
+		return m.pollWatched()
+	}
+	return nil
+}
+
+// handleQueue follows a build started from here until it has a number,
+// then brings it to where the user is looking.
+func (m Model) handleQueue(msg queueMsg) (tea.Model, tea.Cmd) {
+	f := m.follows[msg.id]
+	if f == nil {
+		return m, nil
+	}
+	name := f.job.FullName()
+	onBuilds := m.scr == scrBuilds && m.builds.job.FullName() == name
+	switch {
+	case errors.Is(msg.err, jenkins.ErrQueueCancelled), errors.Is(msg.err, jenkins.ErrNotFound):
+		delete(m.follows, msg.id)
+		m.setErr(fmt.Errorf("%s: %w", name, msg.err))
+		if onBuilds {
+			m.builds.polling = true // drop the queued row
+			return m, m.loadDetail(f.job)
+		}
+		return m, nil
+	case msg.err != nil:
+		if !f.warned {
+			f.warned = true
+			m.setErr(fmt.Errorf("following the queued build of %s: %w", name, msg.err))
+		}
+		return m, queueTick(msg.id, m.queueDelay(f))
+	case msg.number == 0:
+		return m, queueTick(msg.id, m.queueDelay(f))
+	}
+
+	delete(m.follows, msg.id)
+	m.setStatus(fmt.Sprintf("🦇 %s #%d started", name, msg.number), false)
+	if m.builds.job.FullName() == name && m.builds.jumpTo == msg.id {
+		m.builds.jumpTo, m.builds.selectNum = 0, msg.number
+	}
+	switch {
+	case m.scr == scrLog && f.fromLog > 0 && m.log.job.FullName() == name && m.log.number == f.fromLog:
+		if m.builds.job.FullName() != name {
+			m.builds = buildsState{job: f.job}
+		}
+		return m.openLog(msg.number)
+	case onBuilds:
+		m.builds.polling = true
+		return m, m.loadDetail(f.job)
+	}
+	return m, nil
 }
 
 // ---- keys -------------------------------------------------------------
@@ -1181,6 +1378,7 @@ func (m Model) buildsKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch key {
 	case "j", "k", "down", "up", "g", "G", "home", "end", "ctrl+d", "ctrl+u", "pgdown", "pgup":
 		m.builds.cursor = moveCursor(m.builds.cursor, n, key, m.listHeight())
+		m.builds.jumpTo = 0 // moved by hand: stay put when a queued build starts
 		return m, nil
 	case "h", "left", "esc", "backspace":
 		return m.back()

@@ -49,7 +49,7 @@ Prebuilt archives for macOS and Linux (amd64 and arm64) are attached to each [re
 | `m` | macros |
 | `o` | open in browser |
 | `f` | follow log output |
-| `r` | refresh |
+| `r` | refresh (a job's builds also refresh themselves while one is queued or running) |
 | `a` | toggle the cat animation |
 | `?` | help |
 | `q` | back / quit |
