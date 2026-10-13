@@ -2,7 +2,7 @@
 
 What changed in each release of jenklod-batman. `jk changelog` prints this file, and the first launch after an upgrade shows what's new.
 
-## Unreleased
+## v0.4.0 (2026-10-13)
 
 ### `jk`
 - `jk` is short for `jenklod-batman`, after the keys that move the cursor. Homebrew, the release archives and `make install` put it next to the binary.
