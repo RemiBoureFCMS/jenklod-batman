@@ -5,11 +5,14 @@ INSTALL_DIR ?= $(HOME)/go/bin
 
 .PHONY: build install test vet run clean dist docs docs-media
 
+# Each also links jk, the short name, next to the binary.
 build:
 	go build -ldflags '$(LDFLAGS)' -o bin/jenklod-batman .
+	ln -sf jenklod-batman bin/jk
 
 install:
 	GOBIN=$(INSTALL_DIR) go install -ldflags '$(LDFLAGS)' .
+	ln -sf jenklod-batman $(INSTALL_DIR)/jk
 
 test:
 	go test ./...
@@ -28,6 +31,7 @@ dist:
 		os=$${p%/*}; arch=$${p#*/}; name=jenklod-batman_$(VERSION)_$${os}_$${arch}; \
 		mkdir -p dist/$$name && \
 		CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch go build -trimpath -ldflags '$(LDFLAGS)' -o dist/$$name/jenklod-batman . && \
+		ln -s jenklod-batman dist/$$name/jk && \
 		cp LICENSE README.md dist/$$name/ && \
 		tar -C dist -czf dist/$$name.tar.gz $$name && rm -rf dist/$$name || exit 1; \
 	done

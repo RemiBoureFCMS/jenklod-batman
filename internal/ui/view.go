@@ -598,6 +598,6 @@ func (m Model) whatsNewView(h int) string {
 		body = strings.Join(rows[:max(1, h-8)], "\n") + "\n" + sDim.Render("…")
 	}
 	box := sTitle.Render("🦇 What's new in "+m.whatsNew.Version) + "\n\n" + body + "\n\n" +
-		sDim.Render("Any key closes this. jenklod-batman changelog lists every version.")
+		sDim.Render("Any key closes this. "+m.cmd+" changelog lists every version.")
 	return lipgloss.Place(m.w, h, lipgloss.Center, lipgloss.Center, sBox.Render(box))
 }

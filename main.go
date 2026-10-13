@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -22,6 +23,13 @@ import (
 
 var version = "dev"
 
+// cmd is the name this was run as: jenklod-batman, or its short link jk.
+// Commands we tell you to type use it.
+var cmd = filepath.Base(os.Args[0])
+
+// usage fills a command's usage text, where %[1]s is cmd.
+func usage(text string) string { return fmt.Sprintf(text, cmd) }
+
 func buildInfo() *debug.BuildInfo {
 	bi, _ := debug.ReadBuildInfo()
 	return bi
@@ -29,7 +37,7 @@ func buildInfo() *debug.BuildInfo {
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, "jenklod-batman:", err)
+		fmt.Fprintln(os.Stderr, cmd+":", err)
 		os.Exit(1)
 	}
 }
@@ -61,10 +69,10 @@ func run() error {
 		showVersion = flag.Bool("version", false, "print the version and exit")
 	)
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage: jenklod-batman [flags]\n"+
-			"       jenklod-batman <macro> [VALUE] [KEY=VALUE…] [-y]   (run --list to list)\n"+
-			"       jenklod-batman update [--check]\n"+
-			"       jenklod-batman changelog [VERSION]\n\nFlags:\n")
+		fmt.Fprint(flag.CommandLine.Output(), usage("Usage: %[1]s [flags]\n"+
+			"       %[1]s <macro> [VALUE] [KEY=VALUE…] [-y]   (run --list to list)\n"+
+			"       %[1]s update [--check]\n"+
+			"       %[1]s changelog [VERSION]\n\nFlags:\n"))
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -109,6 +117,7 @@ func run() error {
 		Client:   client,
 		NoAnim:   *noAnim,
 		WizardFn: wizardFunc(cfg),
+		Command:  cmd,
 		Updates:  updates,
 		WhatsNew: whatsNew,
 	})

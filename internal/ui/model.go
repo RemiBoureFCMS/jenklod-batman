@@ -2,6 +2,7 @@
 package ui
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -43,6 +44,7 @@ type Options struct {
 	Client   *jenkins.Client // nil when the setup wizard must run
 	NoAnim   bool
 	WizardFn WizardFunc
+	Command  string          // the name this was run as, for hints; jenklod-batman if empty
 	Updates  *update.Checker // nil: no check for new releases
 	WhatsNew WhatsNew        // shown once at start, if set
 }
@@ -57,6 +59,7 @@ type Model struct {
 	cfg    *config.Config
 	client *jenkins.Client
 	anim   bool
+	cmd    string // the name this was run as: jenklod-batman or jk
 
 	w, h  int
 	scr   screen
@@ -238,6 +241,7 @@ func New(o Options) Model {
 		cfg:      o.Config,
 		client:   o.Client,
 		anim:     !o.NoAnim,
+		cmd:      cmp.Or(o.Command, "jenklod-batman"),
 		cat:      newCat(time.Now().UnixNano()),
 		wiz:      newWizard(o.Config, o.WizardFn),
 		watch:    map[string]*watchState{},
@@ -864,7 +868,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err == nil && msg.v != (update.Version{}) {
 			m.newVersion = msg.v.String()
 			if msg.news {
-				m.updateNote = fmt.Sprintf("🦇 %s is out — run jenklod-batman update", msg.v)
+				m.updateNote = fmt.Sprintf("🦇 %s is out — run %s update", msg.v, m.cmd)
 				m.sayUpdate()
 			}
 		}

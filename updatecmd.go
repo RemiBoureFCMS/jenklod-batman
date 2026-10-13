@@ -21,7 +21,7 @@ import (
 //go:embed CHANGELOG.md
 var changelogMD string
 
-const updateUsage = `Usage: jenklod-batman update [--check]
+const updateUsage = `Usage: %[1]s update [--check]
 
 Installs the latest release the way this copy was installed: Homebrew,
 go install, or the release archive (checked against checksums.txt), then
@@ -35,10 +35,10 @@ func runUpdate(current string, fromBuildInfo bool, args []string) error {
 		case "--check", "-check":
 			check = true
 		case "-h", "--help":
-			fmt.Println(updateUsage)
+			fmt.Println(usage(updateUsage))
 			return nil
 		default:
-			return fmt.Errorf("unknown argument %s\n\n%s", a, updateUsage)
+			return fmt.Errorf("unknown argument %s\n\n%s", a, usage(updateUsage))
 		}
 	}
 	cur, ok := update.Parse(current)
@@ -67,8 +67,8 @@ func runUpdate(current string, fromBuildInfo bool, args []string) error {
 		return nil
 	}
 	if check {
-		fmt.Printf("jenklod-batman %s is out (released %s; you have %s). Run jenklod-batman update.\n",
-			to, latest.Published.Format("2006-01-02"), cur)
+		fmt.Printf("jenklod-batman %s is out (released %s; you have %s). Run %s update.\n",
+			to, latest.Published.Format("2006-01-02"), cur, cmd)
 		return nil
 	}
 
@@ -99,7 +99,7 @@ func runUpdate(current string, fromBuildInfo bool, args []string) error {
 	return nil
 }
 
-const changelogUsage = `Usage: jenklod-batman changelog [VERSION]
+const changelogUsage = `Usage: %[1]s changelog [VERSION]
 
 Prints the changelog, or the section of one version (e.g. v0.4.0, or
 Unreleased). Exits non-zero if that version has no section.`
@@ -112,7 +112,7 @@ func runChangelog(args []string) error {
 		fmt.Print(changelogMD)
 		return nil
 	case len(args) == 1 && (args[0] == "-h" || args[0] == "--help"):
-		fmt.Println(changelogUsage)
+		fmt.Println(usage(changelogUsage))
 		return nil
 	case len(args) == 1:
 		s, ok := changelog.Section(changelogMD, args[0])
@@ -122,7 +122,7 @@ func runChangelog(args []string) error {
 		fmt.Println(s)
 		return nil
 	}
-	return errors.New(changelogUsage)
+	return errors.New(usage(changelogUsage))
 }
 
 func loadUpdateState() *update.State {

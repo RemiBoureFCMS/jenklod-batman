@@ -176,6 +176,7 @@ func tarball(t *testing.T, dir string, bin []byte) []byte {
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
 	tw := tar.NewWriter(gz)
+	tw.WriteHeader(&tar.Header{Name: dir + "/jk", Typeflag: tar.TypeSymlink, Linkname: "jenklod-batman", Mode: 0o777})
 	for name, body := range map[string][]byte{dir + "/README.md": []byte("readme"), dir + "/jenklod-batman": bin} {
 		tw.WriteHeader(&tar.Header{Name: name, Mode: 0o755, Size: int64(len(body))})
 		tw.Write(body)

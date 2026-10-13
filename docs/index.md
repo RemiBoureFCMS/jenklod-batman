@@ -32,7 +32,7 @@ features:
     link: /guide/search
   - icon: 🧰
     title: Macros
-    details: Save sequences such as "abort, redeploy to prod, approve, wait for green". Run them in the background from the TUI, or from a script as jenklod-batman ship v2.8.0, with the version as the macro's argument.
+    details: Save sequences such as "abort, redeploy to prod, approve, wait for green". Run them in the background from the TUI, or from a script as jk ship v2.8.0, with the version as the macro's argument.
     link: /guide/macros
   - icon: 🔁
     title: Rebuild, pick a branch
@@ -52,7 +52,7 @@ features:
     link: /guide/first-run
   - icon: ⬆️
     title: Stays up to date
-    details: The header says when a new release is out. jenklod-batman update installs it the way you installed it, and the first launch after shows what's new.
+    details: The header says when a new release is out. jk update installs it the way you installed it, and the first launch after shows what's new.
     link: /guide/install#upgrading
 ---
 

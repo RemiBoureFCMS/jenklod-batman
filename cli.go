@@ -16,9 +16,9 @@ import (
 	"github.com/krank56/jenklod-batman/internal/secret"
 )
 
-const runUsage = `Usage: jenklod-batman <macro> [VALUE] [KEY=VALUE…] [-y] [--config FILE]
-       jenklod-batman run <macro> [VALUE] [KEY=VALUE…] [-y] [--config FILE]
-       jenklod-batman run --list
+const runUsage = `Usage: %[1]s <macro> [VALUE] [KEY=VALUE…] [-y] [--config FILE]
+       %[1]s run <macro> [VALUE] [KEY=VALUE…] [-y] [--config FILE]
+       %[1]s run --list
 
 Runs a macro made in the TUI (press m). VALUE fills the macro's argument
 parameter, if it has one (e.g. BRANCH). KEY=VALUE overrides that parameter
@@ -26,7 +26,7 @@ in every build step that has it. On a terminal it shows the steps and asks
 first; -y (or no terminal, e.g. cron) runs straight away. Exits non-zero if
 a step fails.`
 
-// runMacro is the `run` subcommand, also reached as `jenklod-batman <macro>`.
+// runMacro is the `run` subcommand, also reached as `jk <macro>`.
 func runMacro(cfgPath string, args []string) error {
 	var (
 		name, arg string
@@ -42,7 +42,7 @@ func runMacro(cfgPath string, args []string) error {
 		case a == "-l" || a == "--list":
 			list = true
 		case a == "-h" || a == "--help":
-			fmt.Println(runUsage)
+			fmt.Println(usage(runUsage))
 			return nil
 		case a == "--config" || a == "-config":
 			if i++; i >= len(args) {
@@ -58,7 +58,7 @@ func runMacro(cfgPath string, args []string) error {
 			}
 			overrides[k] = v
 		case strings.HasPrefix(a, "-"):
-			return fmt.Errorf("unknown flag %s\n\n%s", a, runUsage)
+			return fmt.Errorf("unknown flag %s\n\n%s", a, usage(runUsage))
 		case name == "":
 			name = a
 		case !hasArg:
@@ -90,7 +90,7 @@ func runMacro(cfgPath string, args []string) error {
 		return nil
 	}
 	if name == "" {
-		return errors.New(runUsage)
+		return errors.New(usage(runUsage))
 	}
 	mac, ok := cfg.Macro(name)
 	if !ok {
@@ -105,7 +105,7 @@ func runMacro(cfgPath string, args []string) error {
 		return err
 	}
 	if !cfg.Complete() {
-		return errors.New("not configured: run jenklod-batman --setup first")
+		return fmt.Errorf("not configured: run %s --setup first", cmd)
 	}
 	token, _, err := secret.Get(cfg.URL, cfg.User)
 	if err != nil {

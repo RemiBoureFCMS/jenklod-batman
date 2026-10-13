@@ -4,7 +4,7 @@ Source docs/tapes/settings.tape
 Output docs/public/media/rebuild.mp4
 
 Hide
-Type "clear && jenklod-batman" Enter
+Type "clear && jk" Enter
 Sleep 1.5s
 Space
 Show

@@ -3,7 +3,7 @@ Source docs/tapes/settings.tape
 Output docs/public/media/macros.mp4
 
 Hide
-Type "clear && jenklod-batman" Enter
+Type "clear && jk" Enter
 Sleep 1.5s
 Space
 Sleep 1s

@@ -3,7 +3,7 @@ Source docs/tapes/settings.tape
 Output docs/public/media/tour.mp4
 
 Hide
-Type "clear && jenklod-batman" Enter
+Type "clear && jk" Enter
 Show
 Sleep 3.5s
 Screenshot docs/public/media/splash.png

@@ -32,13 +32,13 @@ func TestUpdateCheckAtStart(t *testing.T) {
 	js := httptest.NewServer(&fakeJenkins{})
 	defer js.Close()
 	client, _ := jenkins.New(js.URL, "bruce", "fake-test-value")
-	m := New(Options{Config: newCfg(t), Client: client, NoAnim: true, Updates: &update.Checker{
+	m := New(Options{Config: newCfg(t), Client: client, NoAnim: true, Command: "jk", Updates: &update.Checker{
 		Source: &update.Source{API: srv.URL, HTTP: srv.Client()}, State: st, Current: cur, Now: time.Now,
 	}})
 	m = drive(t, m, tea.WindowSizeMsg{Width: 120, Height: 30})
 	m = drive(t, m, cmdMsg{m.Init()})
 	v := snapshot(t, "50-update-badge", m)
-	if !strings.Contains(v, "↑ v0.4.0") || !strings.Contains(m.status, "v0.4.0 is out") || !strings.Contains(m.status, "jenklod-batman update") {
+	if !strings.Contains(v, "↑ v0.4.0") || !strings.Contains(m.status, "v0.4.0 is out") || !strings.Contains(m.status, "run jk update") {
 		t.Errorf("status=%q\n%s", m.status, v)
 	}
 }
