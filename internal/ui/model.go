@@ -16,6 +16,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/krank56/jenklod-batman/internal/config"
+	"github.com/krank56/jenklod-batman/internal/github"
 	"github.com/krank56/jenklod-batman/internal/jenkins"
 	"github.com/krank56/jenklod-batman/internal/notify"
 )
@@ -86,6 +87,13 @@ type Model struct {
 	macros    macrosState
 	run       *macroRun
 	macroPoll time.Duration // tests shorten the runner's wait between checks
+
+	// gh lists branches for the build form's picker. jobRepos remembers
+	// the repository found for a job, and branches the last list of each
+	// repository, shown at once while a fresh one is fetched.
+	gh       *github.Client
+	jobRepos map[string]github.Repo
+	branches map[github.Repo][]github.Branch
 }
 
 type jobsState struct {
@@ -161,6 +169,22 @@ type paramsState struct {
 	skippedPass int // password parameters left out of the macro
 
 	rebuildOf int // the build whose values filled the form (R), or 0
+
+	pick *branchPicker // open on a text field after ctrl+g
+}
+
+// branchPicker is the dropdown of GitHub branches under a text field.
+// Until the job's repository is known it asks for it: a choice between
+// those the last build checked out, or owner/name typed in.
+type branchPicker struct {
+	field    int
+	repo     github.Repo // zero while finding it
+	choices  []github.Repo
+	ask      *textinput.Model
+	askErr   string
+	branches []github.Branch
+	loading  bool // fetching; with branches shown, a refresh
+	cursor   int
 }
 
 type paramField struct {
@@ -198,14 +222,17 @@ func New(o Options) Model {
 	fi.Prompt = "/"
 	fi.Placeholder = "search all folders"
 	m := Model{
-		cfg:     o.Config,
-		client:  o.Client,
-		anim:    !o.NoAnim,
-		cat:     newCat(time.Now().UnixNano()),
-		wiz:     newWizard(o.Config, o.WizardFn),
-		watch:   map[string]*watchState{},
-		follows: map[int]*follow{},
-		scr:     scrSplash,
+		cfg:      o.Config,
+		client:   o.Client,
+		anim:     !o.NoAnim,
+		cat:      newCat(time.Now().UnixNano()),
+		wiz:      newWizard(o.Config, o.WizardFn),
+		watch:    map[string]*watchState{},
+		follows:  map[int]*follow{},
+		scr:      scrSplash,
+		gh:       github.New(),
+		jobRepos: map[string]github.Repo{},
+		branches: map[github.Repo][]github.Branch{},
 	}
 	m.jobs.filter = fi
 	m.log.follow = true
@@ -292,6 +319,18 @@ type queueMsg struct {
 	id     int
 	number int // 0 while still queued
 	err    error
+}
+
+type reposMsg struct {
+	job  string
+	urls []string
+	err  error
+}
+
+type branchesMsg struct {
+	repo     github.Repo
+	branches []github.Branch
+	err      error
 }
 
 type watchResultMsg struct {
@@ -486,6 +525,26 @@ func (m Model) pollWatched() tea.Cmd {
 		})
 	}
 	return tea.Batch(cmds...)
+}
+
+func (m Model) loadRemotes(job jenkins.Job) tea.Cmd {
+	c := m.client
+	return func() tea.Msg {
+		cx, cancel := ctx()
+		defer cancel()
+		urls, err := c.RemoteURLs(cx, job.Path)
+		return reposMsg{job: job.FullName(), urls: urls, err: err}
+	}
+}
+
+func (m Model) loadBranches(r github.Repo) tea.Cmd {
+	gh := m.gh
+	return func() tea.Msg {
+		cx, cancel := ctx()
+		defer cancel()
+		bs, err := gh.Branches(cx, r)
+		return branchesMsg{repo: r, branches: bs, err: err}
+	}
 }
 
 // openBrowser is notify.Open; tests replace it.
@@ -754,6 +813,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case watchResultMsg:
 		return m, m.handleWatch(msg)
+
+	case reposMsg:
+		return m.handleRepos(msg)
+
+	case branchesMsg:
+		return m.handleBranches(msg)
 
 	case notifyFailedMsg:
 		// Say it once; the in-app status line still shows every event.
@@ -1744,6 +1809,9 @@ func (p paramsState) values() map[string]string {
 func (m Model) paramsKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	p := &m.params
 	n := len(p.fields)
+	if p.pick != nil {
+		return m.pickerKey(k)
+	}
 	switch k.String() {
 	case "esc":
 		m.scr = p.returnTo
@@ -1763,6 +1831,11 @@ func (m Model) paramsKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.submitParams()
 	case "ctrl+x":
 		return m.rejectInput()
+	case "ctrl+g":
+		if p.textFocused() {
+			return m.openPicker()
+		}
+		return m, nil
 	}
 	if n == 0 {
 		if k.String() == "x" {

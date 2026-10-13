@@ -25,6 +25,14 @@ The list keeps itself up to date while a build is queued or running: every 2 sec
 
 From the jobs list, you don't have to open a job first: <kbd>b</kbd> builds the selected job, <kbd>R</kbd> rebuilds its last build, <kbd>L</kbd> opens its last build's log, and <kbd>x</kbd> aborts its last build.
 
+### Branches
+
+In the build form, <kbd>ctrl+g</kbd> on a text field opens a list of the job's GitHub branches under it: the default branch first, then the most recently committed to. Typing filters the list, <kbd>↑</kbd>/<kbd>↓</kbd> move, and <kbd>enter</kbd> puts the branch name in the field. If nothing matches, <kbd>enter</kbd> keeps what you typed, such as a commit or a branch pushed seconds ago. <kbd>esc</kbd> closes the list. It works in every form: build, rebuild, macro steps and input steps.
+
+The branches come from GitHub through the [gh](https://cli.github.com) CLI's login: install it and run `gh auth login` once. The app asks `gh auth token` for each fetch and never stores the token. Each repository's list is kept while the app runs, so the list shows at once next time while a fresh one loads.
+
+The repository is the one the job's last build checked out. If that build checked out several (a shared library, say) or none, the list asks which one, and saves your answer under [`repos`](/reference/config) in the config.
+
 ### Rebuilding
 
 <kbd>R</kbd> opens the build form filled in with the parameters an earlier build ran with. It uses the selected build in the builds list, the build you're reading in a log, or the job's last build in the jobs list. Change anything you like, then <kbd>enter</kbd> asks y/n as usual.
