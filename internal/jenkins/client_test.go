@@ -306,3 +306,33 @@ func TestJobDetailQueued(t *testing.T) {
 		t.Errorf("nothing queued: %+v, %v", d.Queued, err)
 	}
 }
+
+func TestRemoteURLs(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if tree := r.URL.Query().Get("tree"); tree != "lastBuild[actions[remoteUrls]]" {
+			t.Errorf("tree = %s", tree)
+		}
+		// The app's checkout, a shared library's, and the app again from a
+		// second checkout step.
+		w.Write([]byte(`{"lastBuild":{"actions":[{},{"_class":"hudson.model.CauseAction"},
+			{"_class":"hudson.plugins.git.util.BuildData","remoteUrls":["https://github.com/wayne/gotham.git"]},
+			{"_class":"hudson.plugins.git.util.BuildData","remoteUrls":["git@github.com:wayne/pipeline-lib.git"]},
+			{"_class":"hudson.plugins.git.util.BuildData","remoteUrls":["https://github.com/wayne/gotham.git"]}]}}`))
+	})
+	got, err := c.RemoteURLs(context.Background(), []string{"deploy"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"https://github.com/wayne/gotham.git", "git@github.com:wayne/pipeline-lib.git"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("urls = %v, want %v", got, want)
+	}
+}
+
+func TestRemoteURLsNeverBuilt(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"lastBuild":null}`))
+	})
+	if got, err := c.RemoteURLs(context.Background(), []string{"deploy"}); err != nil || len(got) != 0 {
+		t.Errorf("urls = %v, err = %v", got, err)
+	}
+}

@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -475,6 +476,33 @@ type LogChunk struct {
 	Text string
 	Next int64
 	More bool
+}
+
+// RemoteURLs lists the git repositories the job's last build checked out,
+// first seen first: the job's own, and those of any shared library. None
+// if it never ran or uses no git.
+func (c *Client) RemoteURLs(ctx context.Context, path []string) ([]string, error) {
+	var resp struct {
+		LastBuild *struct {
+			Actions []struct {
+				RemoteURLs []string `json:"remoteUrls"`
+			} `json:"actions"`
+		} `json:"lastBuild"`
+	}
+	if err := c.getJSON(ctx, jobPath(path), "lastBuild[actions[remoteUrls]]", &resp); err != nil {
+		return nil, err
+	}
+	var out []string
+	if resp.LastBuild != nil {
+		for _, a := range resp.LastBuild.Actions {
+			for _, u := range a.RemoteURLs {
+				if !slices.Contains(out, u) {
+					out = append(out, u)
+				}
+			}
+		}
+	}
+	return out, nil
 }
 
 // Log fetches console output starting at byte offset start.

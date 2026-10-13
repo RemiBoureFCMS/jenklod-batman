@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -83,5 +84,30 @@ func TestMacrosRoundTrip(t *testing.T) {
 	}
 	if s := want[0].Steps[4].String(); s != "abort input on gotham/deploy (30m)" {
 		t.Errorf("describe = %q", s)
+	}
+}
+
+func TestReposRoundTrip(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	c, _ := Load(path)
+	c.URL = "https://ci.gotham/"
+	if got := c.Repo("gotham/deploy"); got != "" {
+		t.Errorf("no repo yet: %q", got)
+	}
+	c.SetRepo("gotham/deploy", "wayne/gotham")
+	if err := c.Save(); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile(path)
+	if !strings.Contains(string(raw), `"gotham/deploy" = "wayne/gotham"`) {
+		t.Errorf("file:\n%s", raw)
+	}
+	again, _ := Load(path)
+	if got := again.Repo("gotham/deploy"); got != "wayne/gotham" {
+		t.Errorf("after load: %q", got)
+	}
+	again.URL = "https://ci.metropolis"
+	if got := again.Repo("gotham/deploy"); got != "" {
+		t.Errorf("repo leaked to another controller: %q", got)
 	}
 }

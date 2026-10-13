@@ -208,10 +208,13 @@ func scriptLog(j *job, b *build) []logLine {
 	return lines
 }
 
+// demoRepo is what every build checks out.
+const demoRepo = "git@github.com:wayne-enterprises/gotham.git"
+
 func stageDetail(st string) string {
 	switch st {
 	case "Checkout":
-		return "Cloning git@github.com:wayne-enterprises/gotham.git (main)"
+		return "Cloning " + demoRepo + " (main)"
 	case "Build":
 		return "go build ./...  (142 packages)"
 	case "Test":
@@ -473,7 +476,10 @@ func (s *Server) buildJSON(b *build) map[string]any {
 	if b.result != "" {
 		dur = b.duration
 	}
-	actions := []any{map[string]any{"causes": []any{map[string]string{"shortDescription": b.cause}}}}
+	actions := []any{
+		map[string]any{"causes": []any{map[string]string{"shortDescription": b.cause}}},
+		map[string]any{"_class": "hudson.plugins.git.util.BuildData", "remoteUrls": []string{demoRepo}},
+	}
 	if len(b.params) > 0 {
 		params := []any{}
 		for _, k := range slices.Sorted(maps.Keys(b.params)) {

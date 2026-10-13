@@ -69,6 +69,9 @@ func TestDemoTreeAndDetail(t *testing.T) {
 	if len(d.Params) != 3 || !d.Builds[0].Building || d.Builds[1].Result != "SUCCESS" {
 		t.Errorf("detail = %+v", d)
 	}
+	if urls, err := c.RemoteURLs(ctx, []string{"gotham", "deploy"}); err != nil || len(urls) != 1 || urls[0] != demoRepo {
+		t.Errorf("remote urls = %v, %v", urls, err)
+	}
 }
 
 func TestDemoBuildLifecycle(t *testing.T) {

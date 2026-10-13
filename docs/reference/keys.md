@@ -64,6 +64,7 @@
 |---|---|
 | <kbd>tab</kbd> / <kbd>shift+tab</kbd> | Next / previous field |
 | <kbd>←</kbd>/<kbd>→</kbd>, <kbd>space</kbd> | Change a choice or a checkbox |
+| <kbd>ctrl+g</kbd> | [Pick a GitHub branch](/guide/browsing#branches) for the text field |
 | <kbd>enter</kbd> | Build, proceed, or save the macro step |
 | <kbd>ctrl+x</kbd> | Abort the input step |
 | <kbd>esc</kbd> | Cancel |

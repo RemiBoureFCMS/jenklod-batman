@@ -142,10 +142,17 @@ func (m Model) footerView() string {
 		add("o", "job page")
 		add("O", "console")
 		add("h", "back")
+	case m.scr == scrParams && m.params.pick != nil:
+		add("↑/↓", "move")
+		add("enter", "pick")
+		add("esc", "close")
 	case m.scr == scrParams && m.params.input != nil:
 		if len(m.params.fields) > 0 {
 			add("tab", "next")
 			add("←/→", "change")
+		}
+		if m.params.textFocused() {
+			add("ctrl+g", "branches")
 		}
 		add("enter", m.params.input.ProceedText)
 		add("ctrl+x", "abort")
@@ -153,6 +160,9 @@ func (m Model) footerView() string {
 	case m.scr == scrParams:
 		add("tab", "next")
 		add("←/→", "change")
+		if m.params.textFocused() {
+			add("ctrl+g", "branches")
+		}
 		if m.params.forMacro {
 			add("enter", "save step")
 		} else {
@@ -503,6 +513,9 @@ func (m Model) paramsView() string {
 		if f.def.Description != "" && focused {
 			b.WriteString("    " + sDim.Render(truncate(f.def.Description, m.w-6)) + "\n")
 		}
+		if focused && p.pick != nil {
+			b.WriteString(m.pickerView() + "\n")
+		}
 	}
 	return b.String()
 }
@@ -523,6 +536,7 @@ func (m Model) helpView(h int) string {
 		{"/", "search this folder, then every other (fuzzy)"},
 		{"b", "build (asks first; form for parameters)"},
 		{"R", "rebuild: the form filled in from the selected or last build"},
+		{"ctrl+g", "in the build form: pick a GitHub branch for the text field"},
 		{"x", "abort a running build (asks first)"},
 		{"L", "open the last build's log (jobs list)"},
 		{"i", "answer a paused pipeline input (proceed / abort)"},
