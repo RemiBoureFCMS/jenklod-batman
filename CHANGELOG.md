@@ -15,6 +15,11 @@ What changed in each release of jenklod-batman. `jenklod-batman changelog` print
 - Branches come from GitHub through the `gh` CLI's login. The token is never stored.
 - The repository is the one the job's last build checked out. When that's unclear, the picker asks once and saves the answer under `repos` in the config.
 
+### Macros
+- A macro can take an argument: one of its build parameters, set with `A` in the editor (`arg` in the config). The word after its name fills it, so `jenklod-batman ship v2.8.0` runs `ship` with `VERSION=v2.8.0`.
+- `run` is optional: `jenklod-batman ship` is `jenklod-batman run ship`. A macro named like a command (`run`, `update`, `changelog`) still needs `run`.
+- The macro list and `run --list` show a macro's argument: `ship <VERSION>`.
+
 ### Browser
 - `o` opens the job's page from the builds list and from a log; `O` opens the selected build, or the log's console.
 

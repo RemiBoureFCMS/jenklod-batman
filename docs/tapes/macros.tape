@@ -40,6 +40,7 @@ Sleep 600ms
 Enter
 Sleep 1.5s
 Screenshot docs/public/media/macro-editor.png
+Sleep 500ms
 Ctrl+S
 Sleep 1.5s
 Down

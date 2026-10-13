@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/krank56/jenklod-batman/internal/config"
+	"github.com/krank56/jenklod-batman/internal/github"
 	"github.com/krank56/jenklod-batman/internal/jenkins"
 	"github.com/krank56/jenklod-batman/internal/macro"
 )
@@ -162,5 +163,23 @@ func TestDemoRunsAMacro(t *testing.T) {
 		case <-time.After(time.Millisecond):
 			clk.add(time.Second)
 		}
+	}
+}
+
+func TestDemoGitHub(t *testing.T) {
+	s, _, _ := setup(t)
+	srv := httptest.NewServer(s)
+	t.Cleanup(srv.Close)
+	gh := &github.Client{
+		API:   func(string) string { return srv.URL + "/api/graphql" },
+		Token: func(string) (string, error) { return "", nil },
+		HTTP:  srv.Client(),
+	}
+	bs, err := gh.Branches(context.Background(), github.Repo{Host: "github.com", Owner: "wayne-enterprises", Name: "gotham"})
+	if err != nil || len(bs) < 5 || bs[0].Name != "main" || !bs[0].Default || bs[1].Committed.Before(bs[2].Committed) {
+		t.Fatalf("branches = %+v, %v", bs, err)
+	}
+	if _, err := gh.Branches(context.Background(), github.Repo{Host: "github.com", Owner: "joker", Name: "plans"}); err == nil {
+		t.Error("an unknown repo is an error, as on GitHub")
 	}
 }

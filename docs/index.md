@@ -32,8 +32,12 @@ features:
     link: /guide/search
   - icon: 🧰
     title: Macros
-    details: Save sequences such as "abort, redeploy to prod, approve, wait for green". Run them in the background from the TUI, or with jenklod-batman run from a script.
+    details: Save sequences such as "abort, redeploy to prod, approve, wait for green". Run them in the background from the TUI, or from a script as jenklod-batman ship v2.8.0, with the version as the macro's argument.
     link: /guide/macros
+  - icon: 🔁
+    title: Rebuild, pick a branch
+    details: R refills the build form from an earlier build. ctrl+g lists the job's GitHub branches for a text field. The new build shows up as queued, then takes its place in the list.
+    link: /guide/browsing#rebuilding
   - icon: ⏸
     title: Pipeline inputs
     details: A build waiting on "Deploy to prod?" is flagged in the list and in the log. Press i to proceed or abort.
@@ -46,6 +50,10 @@ features:
     title: Token in the keyring
     details: Your API token goes to Keychain or the Secret Service, never to disk. The config file holds only the URL, your user and your preferences.
     link: /guide/first-run
+  - icon: ⬆️
+    title: Stays up to date
+    details: The header says when a new release is out. jenklod-batman update installs it the way you installed it, and the first launch after shows what's new.
+    link: /guide/install#upgrading
 ---
 
 <div class="home-demo">

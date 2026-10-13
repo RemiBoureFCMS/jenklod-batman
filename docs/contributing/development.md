@@ -38,6 +38,12 @@ cp docs/tapes/demo.toml /tmp/demo.toml
 JENKINS_TOKEN=demo go run . --config /tmp/demo.toml
 ```
 
+It also plays GitHub for the branch picker: its builds check out `wayne-enterprises/gotham`, whose fictional branches it serves on `/api/graphql`. Point the app there with `JB_GITHUB_API`; then it sends no token and doesn't ask `gh`:
+
+```sh
+JB_GITHUB_API=http://127.0.0.1:8765/api/graphql JENKINS_TOKEN=demo go run . --config /tmp/demo.toml
+```
+
 ## Docs
 
 ```sh
@@ -53,4 +59,6 @@ brew install vhs
 make docs-media   # or: docs/tapes/record.sh tour macros
 ```
 
-Each recording starts a fresh demo server and a copy of `docs/tapes/demo.toml`. The outputs are committed, and CI only builds and publishes the site. Pushing to `main` with changes under `docs/` publishes it.
+Each recording starts a fresh demo server and a copy of `docs/tapes/demo.toml`. The outputs are committed, and CI only builds and publishes the site. Pushing to `main` with changes under `docs/` or to `CHANGELOG.md` publishes it.
+
+vhs takes a `Screenshot` on the next frame, after the following command has run, so put a `Sleep` right after each one.

@@ -302,6 +302,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case p == "/crumbIssuer/api/json":
 		http.NotFound(w, r)
 		return
+	case p == "/api/graphql":
+		s.serveGitHub(w, r)
+		return
 	}
 	if m := reQueue.FindStringSubmatch(p); m != nil {
 		s.serveQueue(w, r, m[1])
@@ -535,6 +538,45 @@ func (s *Server) waiting(j *job) int {
 		}
 	}
 	return oldest
+}
+
+// branches are the fictional branches of demoRepo, with how long ago each
+// was last committed to.
+var branches = []struct {
+	name string
+	ago  time.Duration
+}{
+	{"main", 3 * time.Hour},
+	{"feat/batmobile-turbo", 40 * time.Minute},
+	{"fix/signal-flicker", 2 * time.Hour},
+	{"feat/grapple-v2", 5 * time.Hour},
+	{"feat/cave-autopilot", 26 * time.Hour},
+	{"chore/bump-go", 50 * time.Hour},
+	{"release/2.7", 6 * 24 * time.Hour},
+	{"experiment/fear-toxin-sim", 12 * 24 * time.Hour},
+}
+
+// serveGitHub answers the branch picker's GraphQL query, as GitHub would
+// for demoRepo (run the app with JB_GITHUB_API pointing here).
+func (s *Server) serveGitHub(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Variables struct{ Owner, Name string } `json:"variables"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+	if req.Variables.Owner+"/"+req.Variables.Name != "wayne-enterprises/gotham" {
+		writeJSON(w, map[string]any{"data": map[string]any{"repository": nil}, "errors": []any{
+			map[string]string{"message": fmt.Sprintf("Could not resolve to a Repository with the name '%s/%s'.", req.Variables.Owner, req.Variables.Name)}}})
+		return
+	}
+	var nodes []any
+	for _, b := range branches {
+		nodes = append(nodes, map[string]any{"name": b.name,
+			"target": map[string]string{"committedDate": s.now().Add(-b.ago).UTC().Format(time.RFC3339)}})
+	}
+	writeJSON(w, map[string]any{"data": map[string]any{"repository": map[string]any{
+		"defaultBranchRef": map[string]string{"name": "main"},
+		"refs":             map[string]any{"pageInfo": map[string]any{"hasNextPage": false}, "nodes": nodes},
+	}}})
 }
 
 func writeJSON(w http.ResponseWriter, v any) {

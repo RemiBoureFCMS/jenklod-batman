@@ -77,4 +77,5 @@ Prints the [changelog](/changelog), which is built into the binary, or only the 
 |---|---|
 | `JENKINS_TOKEN` | API token to use instead of the keyring's. |
 | `XDG_CONFIG_HOME` | Base directory for the config (default `~/.config`). |
+| `JB_GITHUB_API` | Send the branch picker's queries to this GraphQL endpoint instead of GitHub's, with no token. For the [demo Jenkins](/contributing/development#the-demo-jenkins). |
 | `XDG_CACHE_HOME` | Base directory for the update check's state, `jenklod-batman/update.json` (default `~/.cache`). |

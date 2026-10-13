@@ -39,7 +39,7 @@ docs:
 	cd docs && npm ci && npm run build
 
 docs-media:
-	docs/tapes/record.sh tour search macros input cli
+	docs/tapes/record.sh tour search macros input cli rebuild branches
 
 clean:
 	rm -rf bin dist

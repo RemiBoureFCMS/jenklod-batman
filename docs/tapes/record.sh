@@ -14,7 +14,7 @@ for name in "$@"; do
 	# The default config location, so commands on screen need no flags.
 	rm -rf "$work/jenklod-batman" && mkdir -p "$work/jenklod-batman"
 	cp docs/tapes/demo.toml "$work/jenklod-batman/config.toml"
-	XDG_CONFIG_HOME="$work" PATH="$PWD/bin:$PATH" vhs "docs/tapes/$name.tape"
+	XDG_CONFIG_HOME="$work" XDG_CACHE_HOME="$work" PATH="$PWD/bin:$PATH" vhs "docs/tapes/$name.tape"
 	kill "$pid"
 	wait "$pid" 2>/dev/null || true
 done

@@ -74,7 +74,7 @@ jenklod-batman ship ENV=prod -y          # override a parameter, don't ask
 jenklod-batman run ship                  # the same as jenklod-batman ship
 ```
 
-<Demo name="cli" caption="List the macros, then run ship with ENV=prod." />
+<Demo name="cli" caption="List the macros, then run ship for v2.8.0, its argument, with ENV=prod." />
 
 - `KEY=VALUE` replaces that parameter in every build step that has it. A key that no step uses is an error, reported before anything runs.
 - A value without `KEY=` fills the macro's [argument](#an-argument).
