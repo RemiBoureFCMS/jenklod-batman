@@ -19,6 +19,7 @@ import (
 	"github.com/krank56/jenklod-batman/internal/github"
 	"github.com/krank56/jenklod-batman/internal/jenkins"
 	"github.com/krank56/jenklod-batman/internal/notify"
+	"github.com/krank56/jenklod-batman/internal/update"
 )
 
 type screen int
@@ -42,6 +43,13 @@ type Options struct {
 	Client   *jenkins.Client // nil when the setup wizard must run
 	NoAnim   bool
 	WizardFn WizardFunc
+	Updates  *update.Checker // nil: no check for new releases
+	WhatsNew WhatsNew        // shown once at start, if set
+}
+
+// WhatsNew is the changelog section of a version just upgraded to.
+type WhatsNew struct {
+	Version, Notes string
 }
 
 // Model is the root Bubble Tea model.
@@ -94,6 +102,11 @@ type Model struct {
 	gh       *github.Client
 	jobRepos map[string]github.Repo
 	branches map[github.Repo][]github.Branch
+
+	updates    *update.Checker
+	newVersion string // a newer release, shown in the header
+	updateNote string // its status line, waiting for a free status line
+	whatsNew   WhatsNew
 }
 
 type jobsState struct {
@@ -233,6 +246,8 @@ func New(o Options) Model {
 		gh:       github.New(),
 		jobRepos: map[string]github.Repo{},
 		branches: map[github.Repo][]github.Branch{},
+		updates:  o.Updates,
+		whatsNew: o.WhatsNew,
 	}
 	m.jobs.filter = fi
 	m.log.follow = true
@@ -331,6 +346,12 @@ type branchesMsg struct {
 	repo     github.Repo
 	branches []github.Branch
 	err      error
+}
+
+type updateMsg struct {
+	v    update.Version // zero: up to date
+	news bool
+	err  error
 }
 
 type watchResultMsg struct {
@@ -547,6 +568,16 @@ func (m Model) loadBranches(r github.Repo) tea.Cmd {
 	}
 }
 
+func (m Model) checkUpdates() tea.Cmd {
+	u := m.updates
+	return func() tea.Msg {
+		cx, cancel := ctx()
+		defer cancel()
+		v, news, err := u.Check(cx)
+		return updateMsg{v: v, news: news, err: err}
+	}
+}
+
 // openBrowser is notify.Open; tests replace it.
 var openBrowser = notify.Open
 
@@ -564,6 +595,9 @@ func openURL(url string) tea.Cmd {
 // Init starts the animation clock and, when connected, the first load.
 func (m Model) Init() tea.Cmd {
 	cmds := []tea.Cmd{tick(), textinput.Blink}
+	if m.updates != nil {
+		cmds = append(cmds, m.checkUpdates())
+	}
 	if m.client != nil {
 		cmds = append(cmds, m.connected()...)
 	}
@@ -574,6 +608,16 @@ func (m *Model) connected() []tea.Cmd {
 	m.jobs.loading = true
 	m.indexLoading = true
 	return []tea.Cmd{m.loadJobs(nil), m.loadIndex(), m.pollWatched(), m.watchTick()}
+}
+
+// sayUpdate puts the new-release note in the status line once it can be
+// seen: past the splash and the setup form, with nothing else to say.
+func (m *Model) sayUpdate() {
+	if m.updateNote == "" || m.scr == scrSplash || m.scr == scrWizard || m.status != "" {
+		return
+	}
+	m.setStatus(m.updateNote, false)
+	m.updateNote = ""
 }
 
 func (m *Model) setStatus(s string, isErr bool) {
@@ -608,6 +652,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !m.statusAt.IsZero() && !m.statusErr && time.Since(m.statusAt) > 6*time.Second {
 			m.status = ""
 		}
+		m.sayUpdate()
 		var cmd tea.Cmd
 		// Keep a running or queued job's history fresh while looking at it.
 		if every := m.refreshEvery(); m.scr == scrBuilds && !m.builds.loading && !m.builds.polling &&
@@ -813,6 +858,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case watchResultMsg:
 		return m, m.handleWatch(msg)
+
+	case updateMsg:
+		// Offline or rate-limited: try again tomorrow, without a word.
+		if msg.err == nil && msg.v != (update.Version{}) {
+			m.newVersion = msg.v.String()
+			if msg.news {
+				m.updateNote = fmt.Sprintf("🦇 %s is out — run jenklod-batman update", msg.v)
+				m.sayUpdate()
+			}
+		}
+		return m, nil
 
 	case reposMsg:
 		return m.handleRepos(msg)
@@ -1032,6 +1088,7 @@ func (m Model) handleKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.scr == scrSplash {
 		m.scr = m.afterSplash()
+		m.sayUpdate()
 		return m, nil
 	}
 	if m.scr == scrWizard {
@@ -1053,6 +1110,10 @@ func (m Model) handleKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.help {
 		m.help = false
+		return m, nil
+	}
+	if m.whatsNew.Version != "" {
+		m.whatsNew = WhatsNew{}
 		return m, nil
 	}
 	if m.scr == scrJobs && m.jobs.filtering {

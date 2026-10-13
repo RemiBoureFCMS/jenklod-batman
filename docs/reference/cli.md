@@ -37,9 +37,41 @@ jenklod-batman run --list
 - **Exit codes:** `0` when every step succeeded; `1` on any error, including a failed step, an unknown macro or an unused override.
 - **Interrupting:** <kbd>ctrl+c</kbd> or `SIGTERM` stops the run. Builds already started keep running.
 
+## `jenklod-batman update`
+
+Installs the latest release.
+
+```text
+jenklod-batman update [--check]
+```
+
+| Argument | Description |
+|---|---|
+| `--check` | Only say whether there's a newer release. |
+| `-h`, `--help` | Show the usage. |
+
+It updates the way this copy was installed:
+
+| Installed with | Update |
+|---|---|
+| Homebrew | `brew upgrade krank56/tap/jenklod-batman`. If the tap doesn't have the release yet, it says so: it catches up within the hour. |
+| `go install` | `go install github.com/krank56/jenklod-batman@<version>`. |
+| A release archive | Downloads the archive for this OS and architecture, checks it against the release's `checksums.txt`, and replaces the binary. It needs write access to the binary's directory. |
+
+Then it prints the release notes of every version since yours. A development build (`dev`, or a version like `v0.3.0-12-gabc1234` from `make build`) refuses to update.
+
+## `jenklod-batman changelog`
+
+```text
+jenklod-batman changelog [VERSION]
+```
+
+Prints the [changelog](/changelog), which is built into the binary, or only the section of `VERSION` (`v0.3.0`, or `Unreleased`). Exits `1` if there's no such section.
+
 ## Environment
 
 | Variable | Description |
 |---|---|
 | `JENKINS_TOKEN` | API token to use instead of the keyring's. |
 | `XDG_CONFIG_HOME` | Base directory for the config (default `~/.config`). |
+| `XDG_CACHE_HOME` | Base directory for the update check's state, `jenklod-batman/update.json` (default `~/.cache`). |

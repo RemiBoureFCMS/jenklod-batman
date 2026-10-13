@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,9 +16,15 @@ import (
 	"github.com/krank56/jenklod-batman/internal/jenkins"
 	"github.com/krank56/jenklod-batman/internal/secret"
 	"github.com/krank56/jenklod-batman/internal/ui"
+	"github.com/krank56/jenklod-batman/internal/update"
 )
 
 var version = "dev"
+
+func buildInfo() *debug.BuildInfo {
+	bi, _ := debug.ReadBuildInfo()
+	return bi
+}
 
 func main() {
 	if err := run(); err != nil {
@@ -31,8 +38,16 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if len(os.Args) > 1 && os.Args[1] == "run" {
-		return runMacro(defPath, os.Args[2:])
+	current, fromBuildInfo := update.Current(version, buildInfo())
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "run":
+			return runMacro(defPath, os.Args[2:])
+		case "update":
+			return runUpdate(current, fromBuildInfo, os.Args[2:])
+		case "changelog":
+			return runChangelog(os.Args[2:])
+		}
 	}
 	var (
 		cfgPath     = flag.String("config", defPath, "config file")
@@ -42,13 +57,16 @@ func run() error {
 		showVersion = flag.Bool("version", false, "print the version and exit")
 	)
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage: jenklod-batman [flags]\n       jenklod-batman run <macro> [KEY=VALUE…] [-y]   (run --list to list)\n\nFlags:\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage: jenklod-batman [flags]\n"+
+			"       jenklod-batman run <macro> [KEY=VALUE…] [-y]   (run --list to list)\n"+
+			"       jenklod-batman update [--check]\n"+
+			"       jenklod-batman changelog [VERSION]\n\nFlags:\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Println("jenklod-batman", version)
+		fmt.Println("jenklod-batman", current)
 		return nil
 	}
 
@@ -81,11 +99,14 @@ func run() error {
 		}
 	}
 
+	updates, whatsNew := startupUpdates(cfg, current)
 	m := ui.New(ui.Options{
 		Config:   cfg,
 		Client:   client,
 		NoAnim:   *noAnim,
 		WizardFn: wizardFunc(cfg),
+		Updates:  updates,
+		WhatsNew: whatsNew,
 	})
 	_, err = tea.NewProgram(m, tea.WithAltScreen()).Run()
 	return err
