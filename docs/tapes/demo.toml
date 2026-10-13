@@ -9,6 +9,7 @@ pinned = ["gotham/deploy", "gotham/batcave-backup", "arkham/cell-audit"]
 
 [[servers."http://127.0.0.1:8765".macros]]
 name = "ship"
+arg = "VERSION"
 
 [[servers."http://127.0.0.1:8765".macros.steps]]
 kind = "abort"

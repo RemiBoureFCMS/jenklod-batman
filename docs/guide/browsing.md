@@ -23,11 +23,17 @@ The list keeps itself up to date while a build is queued or running: every 2 sec
 - <kbd>x</kbd> aborts the selected build if it's running, after a y/n.
 - <kbd>enter</kbd> opens the build's console log.
 
+![A build waiting in the queue, as a QUEUED row above the running ones](/media/queued.png)
+
 From the jobs list, you don't have to open a job first: <kbd>b</kbd> builds the selected job, <kbd>R</kbd> rebuilds its last build, <kbd>L</kbd> opens its last build's log, and <kbd>x</kbd> aborts its last build.
 
 ### Branches
 
 In the build form, <kbd>ctrl+g</kbd> on a text field opens a list of the job's GitHub branches under it: the default branch first, then the most recently committed to. Typing filters the list, <kbd>↑</kbd>/<kbd>↓</kbd> move, and <kbd>enter</kbd> puts the branch name in the field. If nothing matches, <kbd>enter</kbd> keeps what you typed, such as a commit or a branch pushed seconds ago. <kbd>esc</kbd> closes the list. It works in every form: build, rebuild, macro steps and input steps.
+
+![The branch list under the VERSION field: main first, then the most recent](/media/branches.png)
+
+<Demo name="branches" caption="ctrl+g on VERSION lists the repository's branches; typing filters them, enter fills the field." />
 
 The branches come from GitHub through the [gh](https://cli.github.com) CLI's login: install it and run `gh auth login` once. The app asks `gh auth token` for each fetch and never stores the token. Each repository's list is kept while the app runs, so the list shows at once next time while a fresh one loads.
 
@@ -40,6 +46,8 @@ The repository is the one the job's last build checked out. If that build checke
 If the job's parameters have changed since, values that still fit are kept and the rest start at their default. The status bar lists what was dropped, reset or new. A job without parameters just asks y/n, like <kbd>b</kbd>. Rebuilt from a log, the screen switches to the new build's log once it starts.
 
 Jobs with a password or file parameter can't be rebuilt, because Jenkins doesn't hand those values back. Use <kbd>b</kbd> instead.
+
+<Demo name="rebuild" caption="R on the running deploy fills the form with its parameters; the new build waits in the queue, then takes its place with the cursor on it." />
 
 ## Logs
 

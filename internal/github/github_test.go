@@ -159,3 +159,19 @@ func TestAPIEndpoint(t *testing.T) {
 		t.Errorf("enterprise: %s", got)
 	}
 }
+
+func TestAPIFromEnvSendsNoToken(t *testing.T) {
+	var auth []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth = append(auth, r.Header.Get("Authorization"))
+		w.Write([]byte(`{"data":{"repository":{"defaultBranchRef":{"name":"main"},"refs":{"pageInfo":{"hasNextPage":false},"nodes":[{"name":"main","target":{}}]}}}}`))
+	}))
+	defer srv.Close()
+	t.Setenv(APIEnv, srv.URL)
+	c := New()
+	c.HTTP = srv.Client()
+	got, err := c.Branches(context.Background(), Repo{"github.com", "wayne", "gotham"})
+	if err != nil || len(got) != 1 || len(auth) != 1 || auth[0] != "" {
+		t.Errorf("branches=%v err=%v auth=%q: gh must not be asked, nor any token sent", got, err, auth)
+	}
+}

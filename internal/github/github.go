@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"regexp"
 	"slices"
@@ -93,9 +94,19 @@ type Client struct {
 	HTTP  *http.Client
 }
 
-// New uses the real API and gh's login.
+// APIEnv, when set, sends every query to that GraphQL endpoint instead,
+// without a token and without asking gh: for the demo Jenkins, which
+// serves fictional branches, so no real token ever goes there.
+const APIEnv = "JB_GITHUB_API"
+
+// New uses the real API and gh's login, or $JB_GITHUB_API.
 func New() *Client {
-	return &Client{API: apiURL, Token: ghToken, HTTP: &http.Client{Timeout: 30 * time.Second}}
+	c := &Client{API: apiURL, Token: ghToken, HTTP: &http.Client{Timeout: 30 * time.Second}}
+	if api := os.Getenv(APIEnv); api != "" {
+		c.API = func(string) string { return api }
+		c.Token = func(string) (string, error) { return "", nil }
+	}
+	return c
 }
 
 func apiURL(host string) string {
@@ -204,7 +215,9 @@ func (c *Client) query(ctx context.Context, host, token string, vars map[string]
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", "bearer "+token)
+	if token != "" {
+		req.Header.Set("Authorization", "bearer "+token)
+	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
