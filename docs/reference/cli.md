@@ -12,18 +12,20 @@ Starts the TUI.
 | `--no-anim` | | Skip the splash and keep the cat still. |
 | `--version` | | Print the version and exit. |
 
-## `jenklod-batman run`
+## `jenklod-batman <macro>`, `jenklod-batman run`
 
-Runs a [macro](/guide/macros) without the TUI.
+Runs a [macro](/guide/macros) without the TUI. `run` is optional: `jenklod-batman ship` and `jenklod-batman run ship` are the same.
 
 ```text
-jenklod-batman run <macro> [KEY=VALUE…] [-y] [--config FILE]
+jenklod-batman <macro> [VALUE] [KEY=VALUE…] [-y] [--config FILE]
+jenklod-batman run <macro> [VALUE] [KEY=VALUE…] [-y] [--config FILE]
 jenklod-batman run --list
 ```
 
 | Argument | Description |
 |---|---|
 | `<macro>` | The macro's name, as listed by `--list`. |
+| `VALUE` | Fills the macro's [argument](/guide/macros#an-argument) parameter. An error if the macro has none, or if `KEY=VALUE` sets the same parameter. |
 | `KEY=VALUE` | Override that parameter in every build step that has it. Repeat for several. A key that no build step uses is an error. |
 | `-y`, `--yes` | Don't ask for confirmation. |
 | `-l`, `--list` | List the macros of the configured Jenkins, with their steps. |
@@ -35,6 +37,7 @@ jenklod-batman run --list
 - **Before running,** it prints the steps and any overrides. On a terminal it asks `Run it? [y/N]`. With `-y`, or without a terminal, it doesn't ask.
 - **Progress** goes to standard output as `[step/total] message`.
 - **Exit codes:** `0` when every step succeeded; `1` on any error, including a failed step, an unknown macro or an unused override.
+- **Without `run`,** the first word must not start with `-`: anything else starts the TUI with its flags. A macro named `run`, `update` or `changelog` needs `run` in front, since those are commands.
 - **Interrupting:** <kbd>ctrl+c</kbd> or `SIGTERM` stops the run. Builds already started keep running.
 
 ## `jenklod-batman update`

@@ -28,7 +28,7 @@ Prebuilt archives for macOS and Linux (amd64 and arm64) are attached to each [re
 - **[Watched jobs](https://jenklod-batman.ytalbi.com/guide/watching):** pinned jobs at the top, with their last build, live progress and desktop notifications.
 - **[Search](https://jenklod-batman.ytalbi.com/guide/search):** `/` fuzzy-matches jobs in every folder.
 - **[Pipeline inputs](https://jenklod-batman.ytalbi.com/guide/inputs):** see and answer "Deploy to prod?" from the terminal.
-- **[Macros](https://jenklod-batman.ytalbi.com/guide/macros):** saved build sequences, run in the TUI or with `jenklod-batman run <name>`.
+- **[Macros](https://jenklod-batman.ytalbi.com/guide/macros):** saved build sequences, run in the TUI or with `jenklod-batman <name>`. Give one an argument to make it an alias: `jenklod-batman cvaden-nuxt-staging my-branch`.
 
 ## Keys
 

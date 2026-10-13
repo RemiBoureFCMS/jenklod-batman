@@ -30,11 +30,13 @@ const (
 	editKind             // choosing the type of a new step
 	editPick             // choosing its job
 	editTimeout          // typing a wait/input timeout
+	editArg              // typing the argument's parameter name
 )
 
 type macroEdit struct {
 	orig   string // name before editing; "" for a new macro
 	name   textinput.Model
+	arg    string // config.Macro.Arg
 	steps  []config.Step
 	cursor int
 	mode   editMode
@@ -44,6 +46,7 @@ type macroEdit struct {
 	pick       textinput.Model
 	pickCursor int
 	timeout    textinput.Model
+	argInput   textinput.Model
 }
 
 // macroRun is the macro running in the background. Only Update touches
@@ -279,7 +282,10 @@ func newMacroEdit(mac config.Macro) *macroEdit {
 	to := textinput.New()
 	to.Prompt = "timeout (minutes): "
 	to.CharLimit = 5
-	e := &macroEdit{orig: mac.Name, name: name, steps: slices.Clone(mac.Steps), pick: pick, timeout: to}
+	arg := textinput.New()
+	arg.Prompt = "argument (parameter name, empty for none): "
+	arg.Placeholder = "BRANCH"
+	e := &macroEdit{orig: mac.Name, name: name, arg: mac.Arg, steps: slices.Clone(mac.Steps), pick: pick, timeout: to, argInput: arg}
 	if mac.Name == "" {
 		e.mode = editName
 		e.name.Focus()
@@ -376,6 +382,28 @@ func (m Model) macroEditKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		e.timeout, cmd = e.timeout.Update(k)
 		return m, cmd
+
+	case editArg:
+		switch key {
+		case "esc":
+			e.mode = editSteps
+			e.argInput.Blur()
+			return m, nil
+		case "enter":
+			arg := strings.TrimSpace(e.argInput.Value())
+			if arg != "" && !(config.Macro{Steps: e.steps}).HasParam(arg) {
+				m.setStatus(arg+" is not a parameter of any build step", true)
+				return m, nil
+			}
+			e.arg = arg
+			e.mode = editSteps
+			e.argInput.Blur()
+			e.dirty = true
+			return m, nil
+		}
+		var cmd tea.Cmd
+		e.argInput, cmd = e.argInput.Update(k)
+		return m, cmd
 	}
 
 	// editSteps
@@ -390,6 +418,12 @@ func (m Model) macroEditKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "r":
 		e.mode = editName
 		e.name.Focus()
+		return m, textinput.Blink
+	case "A":
+		e.mode = editArg
+		e.argInput.SetValue(e.arg)
+		e.argInput.CursorEnd()
+		e.argInput.Focus()
 		return m, textinput.Blink
 	case "ctrl+s":
 		return m.saveMacro()
@@ -541,7 +575,11 @@ func (m Model) saveMacro() (tea.Model, tea.Cmd) {
 	case len(e.steps) == 0:
 		m.setStatus("Add at least one step (a)", true)
 		return m, nil
+	case e.arg != "" && !(config.Macro{Steps: e.steps}).HasParam(e.arg):
+		m.setStatus("The argument "+e.arg+" is no longer a parameter of any build step (A to change it)", true)
+		return m, nil
 	}
+	saved := config.Macro{Name: name, Arg: e.arg, Steps: e.steps}
 	prev := m.cfg.Macros()
 	var next []config.Macro
 	replaced := false
@@ -549,7 +587,7 @@ func (m Model) saveMacro() (tea.Model, tea.Cmd) {
 		switch mac.Name {
 		case e.orig:
 			if e.orig != "" {
-				next = append(next, config.Macro{Name: name, Steps: e.steps})
+				next = append(next, saved)
 				replaced = true
 				continue
 			}
@@ -560,7 +598,7 @@ func (m Model) saveMacro() (tea.Model, tea.Cmd) {
 		next = append(next, mac)
 	}
 	if !replaced {
-		next = append(next, config.Macro{Name: name, Steps: e.steps})
+		next = append(next, saved)
 	}
 	m.cfg.SetMacros(next)
 	if err := m.cfg.Save(); err != nil {
@@ -575,6 +613,14 @@ func (m Model) saveMacro() (tea.Model, tea.Cmd) {
 			m.macros.cursor = i
 		}
 	}
-	m.setStatus("Saved macro "+name+" — run it here, or: jenklod-batman run "+name, false)
+	m.setStatus("Saved macro "+name+" — run it here, or: jenklod-batman "+usage(saved), false)
 	return m, nil
+}
+
+// usage is how the macro is typed on the command line, e.g. "ship <BRANCH>".
+func usage(mac config.Macro) string {
+	if mac.Arg == "" {
+		return mac.Name
+	}
+	return mac.Name + " <" + mac.Arg + ">"
 }

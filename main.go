@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -40,13 +41,16 @@ func run() error {
 	}
 	current, fromBuildInfo := update.Current(version, buildInfo())
 	if len(os.Args) > 1 {
-		switch os.Args[1] {
-		case "run":
+		// Commands first: a macro with one of their names needs "run".
+		switch a := os.Args[1]; {
+		case a == "run":
 			return runMacro(defPath, os.Args[2:])
-		case "update":
+		case a == "update":
 			return runUpdate(current, fromBuildInfo, os.Args[2:])
-		case "changelog":
+		case a == "changelog":
 			return runChangelog(os.Args[2:])
+		case !strings.HasPrefix(a, "-"):
+			return runMacro(defPath, os.Args[1:])
 		}
 	}
 	var (
@@ -58,7 +62,7 @@ func run() error {
 	)
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage: jenklod-batman [flags]\n"+
-			"       jenklod-batman run <macro> [KEY=VALUE…] [-y]   (run --list to list)\n"+
+			"       jenklod-batman <macro> [VALUE] [KEY=VALUE…] [-y]   (run --list to list)\n"+
 			"       jenklod-batman update [--check]\n"+
 			"       jenklod-batman changelog [VERSION]\n\nFlags:\n")
 		flag.PrintDefaults()

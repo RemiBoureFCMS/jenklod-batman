@@ -20,8 +20,22 @@ const DefaultTimeoutMinutes = 30
 
 // Macro is a named sequence of steps, run with `m` or `run <name>`.
 type Macro struct {
-	Name  string `toml:"name"`
+	Name string `toml:"name"`
+	// Arg names the build parameter that a value typed after the macro's
+	// name fills: with Arg = "BRANCH", `jenklod-batman ship main` runs it
+	// with BRANCH=main.
+	Arg   string `toml:"arg,omitempty"`
 	Steps []Step `toml:"steps"`
+}
+
+// HasParam reports whether a build step of the macro passes parameter k.
+func (m Macro) HasParam(k string) bool {
+	for _, s := range m.Steps {
+		if _, ok := s.Params[k]; ok && s.Kind == StepBuild && s.WithParams {
+			return true
+		}
+	}
+	return false
 }
 
 // Step is one action of a macro.
