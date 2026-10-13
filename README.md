@@ -21,7 +21,7 @@ brew install krank56/tap/jenklod-batman
 go install github.com/krank56/jenklod-batman@latest
 ```
 
-Prebuilt archives for macOS and Linux (amd64 and arm64) are attached to each [release](https://github.com/krank56/jenklod-batman/releases). On first launch a setup form asks for your Jenkins URL, user and API token. The token goes to the system keyring, never to disk ([first run](https://jenklod-batman.ytalbi.com/guide/first-run)).
+Prebuilt archives for macOS and Linux (amd64 and arm64) are attached to each [release](https://github.com/krank56/jenklod-batman/releases). `jenklod-batman update` upgrades whichever way you installed it, and the [changelog](CHANGELOG.md) lists what changed. On first launch a setup form asks for your Jenkins URL, user and API token. The token goes to the system keyring, never to disk ([first run](https://jenklod-batman.ytalbi.com/guide/first-run)).
 
 ## Highlights
 

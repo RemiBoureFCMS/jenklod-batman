@@ -111,3 +111,19 @@ func TestReposRoundTrip(t *testing.T) {
 		t.Errorf("repo leaked to another controller: %q", got)
 	}
 }
+
+func TestCheckUpdates(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	c, _ := Load(path)
+	if !c.UpdatesOn() {
+		t.Error("checking for updates is on by default")
+	}
+	c.Save()
+	if raw, _ := os.ReadFile(path); strings.Contains(string(raw), "check_updates") {
+		t.Errorf("the default is not written out:\n%s", raw)
+	}
+	os.WriteFile(path, []byte("check_updates = false\n"), 0o600)
+	if c, _ := Load(path); c.UpdatesOn() {
+		t.Error("check_updates = false turns it off")
+	}
+}

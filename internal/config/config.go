@@ -24,6 +24,8 @@ type Config struct {
 	URL         string `toml:"url"`
 	User        string `toml:"user"`
 	PollSeconds int    `toml:"poll_seconds"`
+	// CheckUpdates turns the daily check for a new release off when false.
+	CheckUpdates *bool `toml:"check_updates,omitempty"`
 	// Pinned is the pre-0.2 list of pins, not tied to a controller. Load
 	// moves it into Servers; it is kept only to read old files.
 	Pinned []string `toml:"pinned,omitempty"`
@@ -77,6 +79,9 @@ func Load(path string) (*Config, error) {
 	}
 	return c, nil
 }
+
+// UpdatesOn reports whether the TUI checks for new releases (the default).
+func (c *Config) UpdatesOn() bool { return c.CheckUpdates == nil || *c.CheckUpdates }
 
 // Complete reports whether URL and user are set.
 func (c *Config) Complete() bool { return c.URL != "" && c.User != "" }

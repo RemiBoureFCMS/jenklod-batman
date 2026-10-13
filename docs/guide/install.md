@@ -35,9 +35,11 @@ A copy installed with a plain `go install` from inside a clone reports `dev` and
 ## Upgrading
 
 ```sh
-brew upgrade jenklod-batman
+jenklod-batman update
 ```
 
-The Homebrew formula follows new releases automatically, usually within an hour of the release.
+It installs the latest release the way this copy was installed: with `brew upgrade` for Homebrew, `go install` for Go, or by downloading the release archive and checking it against `checksums.txt`. Then it prints what changed. `jenklod-batman update --check` only says whether there's a newer release.
+
+The TUI checks once a day and shows `↑ vX.Y.Z` in the header when there is one, an hour after it's released, which is when the Homebrew formula has caught up. `check_updates = false` in the [config](/reference/config) turns that off. The first launch after an upgrade shows what's new; `jenklod-batman changelog` prints the whole [changelog](/changelog).
 
 Next: [First run](./first-run).
