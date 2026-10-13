@@ -363,6 +363,15 @@ type Detail struct {
 	Buildable bool
 	Params    []Param
 	Builds    []Build
+	// Queued is the job's build waiting in the queue, or nil. Jenkins only
+	// reports the first when there are several.
+	Queued *Queued
+}
+
+// Queued is a build waiting in the queue: it has no number yet.
+type Queued struct {
+	ID  int
+	Why string // e.g. "In the quiet period. Expires in 4.9 sec"
 }
 
 type apiBuild struct {
@@ -405,7 +414,11 @@ func (c *Client) JobDetail(ctx context.Context, path []string) (*Detail, error) 
 		Name      string     `json:"name"`
 		Buildable bool       `json:"buildable"`
 		Builds    []apiBuild `json:"builds"`
-		Property  []struct {
+		QueueItem *struct {
+			ID  int    `json:"id"`
+			Why string `json:"why"`
+		} `json:"queueItem"`
+		Property []struct {
 			ParameterDefinitions []struct {
 				Class       string   `json:"_class"`
 				Name        string   `json:"name"`
@@ -418,12 +431,15 @@ func (c *Client) JobDetail(ctx context.Context, path []string) (*Detail, error) 
 			} `json:"parameterDefinitions"`
 		} `json:"property"`
 	}
-	tree := "name,buildable,builds[" + buildTree + "]{0,30}," +
+	tree := "name,buildable,builds[" + buildTree + "]{0,30},queueItem[id,why]," +
 		"property[parameterDefinitions[name,type,description,choices,defaultParameterValue[value]]]"
 	if err := c.getJSON(ctx, jobPath(path), tree, &resp); err != nil {
 		return nil, err
 	}
 	d := &Detail{Name: resp.Name, Buildable: resp.Buildable}
+	if q := resp.QueueItem; q != nil {
+		d.Queued = &Queued{ID: q.ID, Why: q.Why}
+	}
 	for _, b := range resp.Builds {
 		d.Builds = append(d.Builds, b.toBuild())
 	}

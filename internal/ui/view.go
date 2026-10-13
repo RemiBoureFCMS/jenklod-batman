@@ -359,12 +359,18 @@ func (m Model) buildsView(h int) string {
 		}
 		return b.String()
 	}
-	if len(d.Builds) == 0 {
+	if len(d.Builds) == 0 && d.Queued == nil {
 		b.WriteString(sDim.Render("  No builds yet. Press b to summon the first one."))
 		return b.String()
 	}
 	b.WriteString(sDim.Render(fmt.Sprintf("    %-7s %-10s %-10s %-18s %s", "BUILD", "RESULT", "STARTED", "DURATION", "CAUSE")) + "\n")
 	h--
+	if q := d.Queued; q != nil {
+		// Not a build yet, so the cursor never lands on it.
+		b.WriteString(fmt.Sprintf("  %s %s %s %s %s %s\n", sWait.Render("…"), pad(sDim.Render("#—"), 7),
+			pad(sWait.Render("QUEUED"), 10), pad("", 10), pad("", 18), sDim.Render(truncate(q.Why, max(0, m.w-60)))))
+		h--
+	}
 	start, end := window(m.builds.cursor, len(d.Builds), h)
 	for i := start; i < end; i++ {
 		bd := d.Builds[i]

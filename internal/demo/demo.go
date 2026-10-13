@@ -71,6 +71,9 @@ type queued struct {
 	number  int
 }
 
+// why is Jenkins' reason a queued build has not started.
+const why = "Waiting for next available executor"
+
 // Server is an http.Handler speaking enough of the Jenkins API for the TUI.
 type Server struct {
 	mu    sync.Mutex
@@ -372,7 +375,7 @@ func (s *Server) serveQueue(w http.ResponseWriter, r *http.Request, id string) {
 		return
 	}
 	if q.number == 0 {
-		writeJSON(w, map[string]any{"cancelled": false, "why": "Waiting for next available executor"})
+		writeJSON(w, map[string]any{"cancelled": false, "why": why})
 		return
 	}
 	writeJSON(w, map[string]any{"cancelled": false, "executable": map[string]int{"number": q.number}})
@@ -509,7 +512,23 @@ func (s *Server) detail(j *job) map[string]any {
 	if len(builds) > 0 {
 		out["lastBuild"] = builds[0]
 	}
+	if id := s.waiting(j); id > 0 {
+		out["inQueue"] = true
+		out["queueItem"] = map[string]any{"id": id, "why": why}
+	}
 	return out
+}
+
+// waiting is the oldest queue item of j that has not started, or 0. Like
+// Jenkins, the job only reports that one.
+func (s *Server) waiting(j *job) int {
+	oldest := 0
+	for id, q := range s.queue {
+		if q.job == j && q.number == 0 && (oldest == 0 || id < oldest) {
+			oldest = id
+		}
+	}
+	return oldest
 }
 
 func writeJSON(w http.ResponseWriter, v any) {
