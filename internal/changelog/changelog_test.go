@@ -49,7 +49,7 @@ func TestRepoChangelog(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, v := range []string{"Unreleased", "v0.1.0", "v0.2.0", "v0.3.0"} {
+	for _, v := range []string{"v0.1.0", "v0.2.0", "v0.3.0", "v0.4.0"} {
 		if s, ok := Section(string(b), v); !ok || strings.TrimSpace(s) == "" {
 			t.Errorf("CHANGELOG.md has no %s section", v)
 		}
